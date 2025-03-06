@@ -1,0 +1,113 @@
+package com.puzzlelog.puzzlelog.controller;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.puzzlelog.puzzlelog.document.EmotionDocument;
+import com.puzzlelog.puzzlelog.document.EmotionStatsDto;
+import com.puzzlelog.puzzlelog.repository.EmotionRepository;
+
+@RestController
+@RequestMapping("/api")
+public class EmotionController {
+
+	@Autowired
+	private EmotionRepository emotionDao;
+	
+	// 감정 저장
+	@PostMapping("/addEmotion")
+	public ResponseEntity<String> addEmotion(@RequestBody EmotionDocument emotion) {
+		if (emotion == null || emotion.getUserId() == null || emotion.getDate() == null) {
+			return ResponseEntity.badRequest().body("Invalid emotion data");
+		}
+		
+		try {
+			emotion.setCreatedAt(Instant.now());
+			emotionDao.save(emotion);
+			return ResponseEntity.ok("Emotion saved successfully");
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().body("Error saving emotion");
+		}
+	}
+	
+	// 특정 날짜 감정 조회
+	@GetMapping("/getEmotionByDate")
+	public ResponseEntity<EmotionDocument> getEmotionByDate(@RequestParam String userId, @RequestParam String date) {
+		try {
+			EmotionDocument emotion = emotionDao.findByUserIdAndDate(userId, Instant.parse(date));
+			return emotion != null ? ResponseEntity.ok(emotion) : ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().build();
+		}
+	}
+	
+	// 특정 기간 감정 조회
+	@GetMapping("/getEmotionsByRange")
+	public ResponseEntity<List<EmotionDocument>> getEmotionsByRange(@RequestParam String userId, @RequestParam String startDate, @RequestParam String endDate) {
+		try {
+			List<EmotionDocument> emotions = emotionDao.findByUserIdAndDateBetween(userId, Instant.parse(startDate), Instant.parse(endDate));
+			return emotions.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(emotions);
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().build();
+		}
+	}
+	
+	// 모든 감정 조회
+	@GetMapping("/getAllEmotions")
+	public ResponseEntity<List<EmotionDocument>> getAllEmotions(@RequestParam String userId) {
+		try {
+			List<EmotionDocument> emotions = emotionDao.findByUserId(userId);
+			return emotions.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(emotions);
+		} catch (Exception e) {
+			return ResponseEntity.internalServerError().build();
+		}
+	}
+	
+	// 특정 기간 감정 통계 조회 ( Pie Chart )
+	@GetMapping("/getEmotionStats")
+	public ResponseEntity<EmotionStatsDto> getEmotionStats(@RequestParam String userId, 
+	                                                       @RequestParam String startDate, 
+	                                                       @RequestParam String endDate) {
+	    try {
+	        // Instant로 변환 (올바른 포맷인지 확인)
+	        Instant start = Instant.parse(startDate.trim());
+	        Instant end = Instant.parse(endDate.trim());
+	        
+	        // 로그 추가
+	        System.out.println("userId: " + userId);
+	        System.out.println("startDate: " + start);
+	        System.out.println("endDate: " + end);
+
+	        List<EmotionDocument> emotions = emotionDao.findByUserIdAndDateBetween(userId, start, end);
+	        
+	        // 조회된 데이터 개수 확인
+	        System.out.println("조회된 감정 데이터 개수: " + emotions.size());
+
+	        if (emotions.isEmpty()) {
+	            return ResponseEntity.ok(new EmotionStatsDto(userId, startDate, endDate, new HashMap<>()));
+	        }
+
+	        Map<String, Integer> emotionCounts = new HashMap<>();
+	        for (EmotionDocument emotion : emotions) {
+	            emotionCounts.put(emotion.getEmotion(), emotionCounts.getOrDefault(emotion.getEmotion(), 0) + 1);
+	        }
+
+	        EmotionStatsDto stats = new EmotionStatsDto(userId, startDate, endDate, emotionCounts);
+	        return ResponseEntity.ok(stats);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.internalServerError().build();
+	    }
+	}
+}

@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[Spring]]></title><description><![CDATA[Level up your Java code and explore what Spring can do for you.]]></description><link>https://spring.io</link><generator>GatsbyJS</generator><lastBuildDate>Thu, 06 Mar 2025 00:33:49 GMT</lastBuildDate><item><title><![CDATA[Spring gRPC 0.4.0 for great good!]]></title><link>https://spring.io/blog/2025/03/04/spring-grpc-for-great-good</link><guid isPermaLink="true">https://spring.io/blog/2025/03/04/spring-grpc-for-great-good</guid><dc:creator><![CDATA[joshlong]]></dc:creator><pubDate>Tue, 04 Mar 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;&lt;em&gt;NB&lt;/em&gt;: you can find the working code for &lt;a href=&quot;https://github.com/joshlong-attic/2025-03-04-spring-grpc-040-walkthrough&quot;&gt;this blog here&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;There&apos;s a new release of the amazing?if experimental?Spring gRPC project: version 0.4.0. I won&apos;t get into the nitty-gritty of all that&apos;s new, but I just wanted to highlight how elated I am to use it and walk you through the step-by-step path to gRPC joy. A million little things fall into place to make it the smoothest experience I&apos;ve ever had using gRPC!&lt;/p&gt;
+&lt;p&gt;I went to the &lt;a href=&quot;https://start.spring.io&quot;&gt;Spring Initializr&lt;/a&gt; and selected &lt;code&gt;GRPC&lt;/code&gt;, &lt;code&gt;GraalVM&lt;/code&gt;, and &lt;code&gt;Web&lt;/code&gt;. I&apos;m a Maven enjoyer, but you do you. I chose Java 23, &apos;natch, since Java 24 is coming &lt;a href=&quot;https://openjdk.org/projects/jdk/24/&quot;&gt;in a week or two&lt;/a&gt;. I figured this blog would still be interesting for at least a few weeks. Specifically, I&apos;m using GraalVM, which is an OpenJDK distribution that supports some extra party tricks, including compiling JVM code into operating system- and architecture-specific native code.&lt;/p&gt;
+&lt;p&gt;If you&apos;re using a UNIX-compatible OS (Cygwin and Windows Subsystem for Linux on Windows count), then you might try &lt;a href=&quot;https://sdkman.io&quot;&gt;SDKMAN&lt;/a&gt; to install and manage your JDK varieties. I did this:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;sdk install java 23.0.2-graalce  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, again, remember: this is Java 23. &lt;a href=&quot;https://openjdk.org/projects/jdk/24/&quot;&gt;Java 24 is due in the middle of March 2025&lt;/a&gt;! Don&apos;t be left behind. You don&apos;t want people snickering and pointing at you at parties, do you? Upgrade!&lt;/p&gt;
+&lt;p&gt;Already, Spring has our backs! The Spring Initializr seized upon the insight that I am using a Servlet engine, added Spring gRPC, Spring Boot&apos;s web support, &lt;em&gt;and&lt;/em&gt; the bridge that allows you to host gRPC in a Servlet container. (By default, Spring gRPC runs gRPC via Netty, without an HTTP foundation.) Oh, &lt;em&gt;and&lt;/em&gt; it opted us into HTTP/2!&lt;/p&gt;
+&lt;p&gt;The Spring Initializr &lt;em&gt;also&lt;/em&gt; very helpfully configured the requisite plugins to do the code generation required to get a gRPC protocol buffer definition transpiled into Java code that we can implement. See what I mean by convenient? We haven&apos;t even started writing code, but we &lt;em&gt;could&lt;/em&gt;!&lt;/p&gt;
+&lt;p&gt;The first step in writing any gRPC service is to define the schema using the Google Protocol Buffers format. We&apos;ll then transpile the schema into Java code, which we can implement in our own service. Make sure you&apos;ve got the &lt;code&gt;protoc&lt;/code&gt; compiler installed. You may also do well to install &lt;code&gt;grpcurl&lt;/code&gt;, a convenient tool for making requests to a gRPC endpoint.&lt;/p&gt;
+&lt;p&gt;Here&apos;s my schema. It defines a simple service to enumerate and adopt &lt;code&gt;Dog&lt;/code&gt;s.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-proto&quot;&gt;syntax = &quot;proto3&quot;;  
+option java_multiple_files = true;  
+option java_package = &quot;com.example.demo.grpc.impl&quot;;  
+option java_outer_classname = &quot;AdoptionsProto&quot;;  
+
+import &quot;google/protobuf/empty.proto&quot;;  
+
+service Adoptions {  
+
+  rpc All(google.protobuf.Empty) returns (DogsResponse){}  
+
+  rpc Adopt(DogAdoptionRequest) returns (google.protobuf.Empty){}  
+}  
+
+message Dog {  
+  int32 id = 1;  
+  string name = 2;  
+  string description = 3;  
+  string owner = 4;  
+}  
+
+message DogAdoptionRequest {  
+  int32 dogId = 1;  
+  string name = 2;  
+}  
+
+message DogsResponse {  
+  repeated Dog dogs = 1;  
+}  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To generate the Java code, run:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;./mvnw -DskipTests package  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now everything&apos;s in place for you to implement your first gRPC service!&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-java&quot;&gt;package com.example.demo;  
+
+import com.example.demo.grpc.impl.AdoptionsGrpc;  
+import com.example.demo.grpc.impl.Dog;  
+import com.example.demo.grpc.impl.DogAdoptionRequest;  
+import com.example.demo.grpc.impl.DogsResponse;  
+import com.google.protobuf.Empty;  
+import io.grpc.stub.StreamObserver;  
+import org.springframework.boot.SpringApplication;  
+import org.springframework.boot.autoconfigure.SpringBootApplication;  
+import org.springframework.stereotype.Service;  
+
+import java.util.List;  
+
+@SpringBootApplication  
+public class DemoApplication {  
+
+    public static void main(String[] args) {  
+        SpringApplication.run(DemoApplication.class, args);  
+    }  
+}  
+
+@Service  
+class AdoptionsGrpcService extends AdoptionsGrpc.AdoptionsImplBase {  
+
+    @Override  
+    public void all(Empty request, StreamObserver&amp;#x3C;DogsResponse&gt; responseObserver) {  
+        responseObserver.onNext(DogsResponse.newBuilder()  
+                .addAllDogs(List.of(  
+                        Dog.newBuilder().setName(&quot;dog1&quot;).setDescription(&quot;the goodest boy&quot;).setOwner(&quot;jlong&quot;).build(),  
+                        Dog.newBuilder().setName(&quot;dog2&quot;).setDescription(&quot;the goodest girl&quot;).setOwner(&quot;jlong&quot;).build()))  
+                .build());  
+        responseObserver.onCompleted();  
+    }  
+
+    @Override  
+    public void adopt(DogAdoptionRequest request, StreamObserver&amp;#x3C;Empty&gt; responseObserver) {  
+        System.out.println(&quot;Adopting &quot; + request.getName() + &quot; &quot; + request.getDogId());  
+        responseObserver.onNext(Empty.getDefaultInstance());  
+        responseObserver.onCompleted();  
+    }  
+}  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To enable virtual threads, add the following to &lt;code&gt;src/main/resources/application.properties&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-properties&quot;&gt;spring.threads.virtual.enabled=true  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, let&apos;s compile a GraalVM native image!&lt;/p&gt;
+&lt;p&gt;To compile a native image that runs on your host operating system, run:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;./mvnw -DskipTests -Pnative native:compile  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To create a Docker image (requires Docker running), run:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;./mvnw -DskipTests -Pnative spring-boot:build-image  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, let&apos;s test it out:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;grpcurl -plaintext localhost:8080 Adoptions.All  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If everything works, congrats on building your first Spring gRPC-centric application! Enjoy your journey to production! ?&lt;/p&gt;</content:encoded></item><item><title><![CDATA[This Week in Sprng - March 4th, 2025]]></title><link>https://spring.io/blog/2025/03/04/this-week-in-spring-march-4th-2025</link><guid isPermaLink="true">https://spring.io/blog/2025/03/04/this-week-in-spring-march-4th-2025</guid><dc:creator><![CDATA[joshlong]]></dc:creator><pubDate>Tue, 04 Mar 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Hi, Spring fans! Welcome to another installment of &lt;em&gt;This Week in Spring&lt;/em&gt;, and Happy Devnexus 2025 to those who celebrate! That&apos;s right sports fans, I&apos;m off to awesome Atlanta, Georgia later today for Devnexus, one of the world&apos;s largest annual gatherings of Java community and luminaries alike. I&apos;ll be doing a talk on the latest-and-greatest in Spring Boot as well as another talk looking at Spring AI with the legendary Dr. Mark Pollack, founder of Spring AI. And, of course, I&apos;ll be soaking up all the other talks by Spring luminaries like Glenn Renfro, Jonatan Ivanov, Ken Kousen, Ryan Baxter, Simon Ritter, John Burns, Josh Cummings, Jennifer Reif, Justin Reock, Nate Schutta, Mahmoud Ben Hassine, Dr. Venkat Subramaniam, Jonathan Schneider, Spencer Gibb, Roni Dover, Pasha Finkelshteyn, DaShaun Carter, Phil Webb, and Matti Tahvonen, James Ward, Mark Heckler, Marit Van Dyk, Dr. Mark Pollack, and so many more!&lt;/p&gt;
+&lt;p&gt;It&apos;s sure to be an event to remember! I&apos;m retooling my talks for this event, so come one, come all, for Spring-slingin&apos; code, fun, and opportunities.&lt;/p&gt;
+&lt;p&gt;And, of course, don&apos;t forget to join me at the Tanzu and Spring booth on the showroom floor! It&apos;s going to be amazing. I&apos;ll be there, happy as can be to answer as many questions as y&apos;all like.&lt;/p&gt;
+&lt;p&gt;Now, without further ado, let&apos;s dive into this week&apos;s roundup!&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://spring.io/blog/2025/03/04/spring-grpc-for-great-good&quot;&gt;Spring gRPC 0.4.0 for great good!&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;the Geeks for Geeks site has a post entirely devoted to &lt;a href=&quot;https://www.geeksforgeeks.org/spring-initializr/&quot;&gt;the Spring Initializr (I don&apos;t blame them!)&lt;/a&gt; - it&apos;s endless bounties are alluring!&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://spring.io/blog/2025/03/03/spring-cloud-2025-0-0-m2-is-abvailable&quot;&gt;Spring Cloud 2025.0.0-M2 (aka Northfields) has been released&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://spring.io/blog/2025/02/25/spring-modulith-1-4-m2-1-3-3-and-1-2-9-released&quot;&gt;Spring Modulith 1.4 M2, 1.3.3, and 1.2.9 released&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;the amazing Programming with Mosh channel appears to have just released a new Spring Boot tutorial, &lt;a href=&quot;https://www.youtube.com/watch?v=gJrjgg1KVL4&quot;&gt;and it looks amazing&lt;/a&gt;!&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.mongodb.com/resources/products/compatibilities/spring-boot?utm_source=google&amp;#x26;utm_campaign=search_gs_pl_evergreen_atlas_language_prosp-nbnon_gic-null_amers-us_ps-all_dv-all_eng_lead&amp;#x26;utm_term=java%20spring%20boot&amp;#x26;utm_medium=cpc_paid_search&amp;#x26;utm_ad=p&amp;#x26;utm_ad_campaign_id=19248124983&amp;#x26;adgroup=148977255552&amp;#x26;cq_cmp=19248124983&amp;#x26;gad_source=1&amp;#x26;gbraid=0AAAAADQ1403-ylQE0jeWh-SeiAF8qiVus&amp;#x26;gclid=CjwKCAiA5pq-BhBuEiwAvkzVZRZSi5lo3XIBImbleUB5Fx7bDMey3vY7rBfnl7vrC_91OcGTQj5j2xoCiNcQAvD_BwE&quot;&gt;the Spring Boot an MongoDB page has been updated!&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;interesting video! How to use &lt;a href=&quot;https://www.youtube.com/watch?v=L6hYN21AV2U&quot;&gt;Spring Boot with ShedLock, a distributed locking library&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://piotrminkowski.com/2025/02/24/using-rag-and-vector-store-with-spring-ai/&quot;&gt;using RAG and &lt;code&gt;VectorStore&lt;/code&gt; with Spring AI&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ul&gt;</content:encoded></item><item><title><![CDATA[Spring Cloud 2025.0.0-M2 (aka Northfields) has been released]]></title><link>https://spring.io/blog/2025/03/03/spring-cloud-2025-0-0-m2-is-abvailable</link><guid isPermaLink="true">https://spring.io/blog/2025/03/03/spring-cloud-2025-0-0-m2-is-abvailable</guid><dc:creator><![CDATA[spencergibb]]></dc:creator><pubDate>Mon, 03 Mar 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;On behalf of the community, I am pleased to announce that the Milestone 2 (M2) of the &lt;a href=&quot;https://cloud.spring.io&quot;&gt;Spring Cloud 2025.0.0&lt;/a&gt; Release Train is available today. The release can be found in &lt;a href=&quot;https://repo.spring.io/milestone/&quot;&gt;Spring Milestone&lt;/a&gt; repository. You can check out the 2025.0.0 &lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-release/wiki/Spring-Cloud-2025.0.0-Release-Notes&quot;&gt;release notes for more information&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;notable-changes-in-the-202500-m2-release-train&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#notable-changes-in-the-202500-m2-release-train&quot; aria-label=&quot;notable changes in the 202500 m2 release train permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Notable Changes in the 2025.0.0-M2 Release Train&lt;/h2&gt;
+&lt;p&gt;This milestone is compatible with Spring Boot 3.5.0-M2. See all issues and pull requests that are part of the release &lt;a href=&quot;https://github.com/orgs/spring-cloud/projects/167&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id=&quot;spring-cloud-gateway&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#spring-cloud-gateway&quot; aria-label=&quot;spring cloud gateway permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Spring Cloud Gateway&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Support rewriting request parameters in Server WebMVC &lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-gateway/pull/3669&quot;&gt;#3669&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Bug fixes for multipart data and retry in Server WebMVC.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;spring-cloud-config&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#spring-cloud-config&quot; aria-label=&quot;spring cloud config permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Spring Cloud Config&lt;/h3&gt;
+&lt;p&gt;Bug fixes and dependency updates.&lt;/p&gt;
+&lt;h3 id=&quot;spring-cloud-commons&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#spring-cloud-commons&quot; aria-label=&quot;spring cloud commons permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Spring Cloud Commons&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Manage the version of okhttp in commons &lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-commons/pull/1470&quot;&gt;#1470&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;spring-cloud-kubernetes&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#spring-cloud-kubernetes&quot; aria-label=&quot;spring cloud kubernetes permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Spring Cloud Kubernetes&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Kubernetes as a Composite config source &lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-kubernetes/pull/1873&quot;&gt;#1873&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The following modules were updated as part of 2025.0.0-M2:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Module&lt;/th&gt;
+&lt;th&gt;Version&lt;/th&gt;
+&lt;th&gt;Issues&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Config&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-config/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Build&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-build/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Openfeign&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-openfeign/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Stream&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-stream/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Netflix&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-netflix/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Commons&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-commons/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Circuitbreaker&lt;/td&gt;
+&lt;td&gt;3.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-circuitbreaker/releases/tag/v3.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Contract&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-contract/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Consul&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-consul/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Gateway&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-gateway/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Vault&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-vault/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Starter Build&lt;/td&gt;
+&lt;td&gt;2025.0.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-starter-build/releases/tag/v2025.0.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Function&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-function/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Task&lt;/td&gt;
+&lt;td&gt;3.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-task/releases/tag/v3.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Kubernetes&lt;/td&gt;
+&lt;td&gt;3.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-kubernetes/releases/tag/v3.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Bus&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-bus/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Spring Cloud Zookeeper&lt;/td&gt;
+&lt;td&gt;4.3.0-M2&lt;/td&gt;
+&lt;td&gt;(&lt;a href=&quot;https://github.com/spring-cloud/spring-cloud-zookeeper/releases/tag/v4.3.0-M2&quot;&gt;issues&lt;/a&gt;)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;As always, we welcome feedback on &lt;a href=&quot;https://github.com/spring-cloud/&quot;&gt;GitHub&lt;/a&gt;, on &lt;a href=&quot;https://gitter.im/spring-cloud/spring-cloud&quot;&gt;Gitter&lt;/a&gt;, on &lt;a href=&quot;https://stackoverflow.com/questions/tagged/spring-cloud&quot;&gt;Stack Overflow&lt;/a&gt;, or on &lt;a href=&quot;https://twitter.com/SpringCloud&quot;&gt;Twitter&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To get started with Maven with a BOM (dependency management only):&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-xml&quot;&gt;&amp;#x3C;repositories&gt;
+    &amp;#x3C;repository&gt;
+        &amp;#x3C;id&gt;spring-milestones&amp;#x3C;/id&gt;
+        &amp;#x3C;name&gt;Spring Milestones&amp;#x3C;/name&gt;
+        &amp;#x3C;url&gt;https://repo.spring.io/milestone&amp;#x3C;/url&gt;
+        &amp;#x3C;snapshots&gt;
+            &amp;#x3C;enabled&gt;false&amp;#x3C;/enabled&gt;
+        &amp;#x3C;/snapshots&gt;
+    &amp;#x3C;/repository&gt;
+&amp;#x3C;/repositories&gt;
+&amp;#x3C;dependencyManagement&gt;
+    &amp;#x3C;dependencies&gt;
+        &amp;#x3C;dependency&gt;
+            &amp;#x3C;groupId&gt;org.springframework.cloud&amp;#x3C;/groupId&gt;
+            &amp;#x3C;artifactId&gt;spring-cloud-dependencies&amp;#x3C;/artifactId&gt;
+            &amp;#x3C;version&gt;2025.0.0-M2&amp;#x3C;/version&gt;
+            &amp;#x3C;type&gt;pom&amp;#x3C;/type&gt;
+            &amp;#x3C;scope&gt;import&amp;#x3C;/scope&gt;
+        &amp;#x3C;/dependency&gt;
+    &amp;#x3C;/dependencies&gt;
+&amp;#x3C;/dependencyManagement&gt;
+&amp;#x3C;dependencies&gt;
+    &amp;#x3C;dependency&gt;
+        &amp;#x3C;groupId&gt;org.springframework.cloud&amp;#x3C;/groupId&gt;
+        &amp;#x3C;artifactId&gt;spring-cloud-starter-config&amp;#x3C;/artifactId&gt;
+    &amp;#x3C;/dependency&gt;
+    &amp;#x3C;dependency&gt;
+        &amp;#x3C;groupId&gt;org.springframework.cloud&amp;#x3C;/groupId&gt;
+        &amp;#x3C;artifactId&gt;spring-cloud-starter-netflix-eureka-client&amp;#x3C;/artifactId&gt;
+    &amp;#x3C;/dependency&gt;
+    ...
+&amp;#x3C;/dependencies&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;or with Gradle:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-groovy&quot;&gt;plugins {
+  id &apos;java&apos;
+  id &apos;org.springframework.boot&apos; version &apos;3.5.0-M1&apos;
+  id &apos;io.spring.dependency-management&apos; version &apos;1.1.7&apos;
+}
+
+//...
+
+ext {
+  set(&apos;springCloudVersion&apos;, &quot;2025.0.0-M2&quot;)
+}
+
+dependencies {
+  implementation &apos;org.springframework.cloud:spring-cloud-starter-config&apos;
+  implementation &apos;org.springframework.cloud:spring-cloud-starter-netflix-eureka-client&apos;
+  //...
+}
+
+dependencyManagement {
+  imports {
+    mavenBom &quot;org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}&quot;
+  }
+}
+
+//...
+
+&lt;/code&gt;&lt;/pre&gt;</content:encoded></item><item><title><![CDATA[Spring Modulith 1.4 M2, 1.3.3, and 1.2.9 released]]></title><link>https://spring.io/blog/2025/02/25/spring-modulith-1-4-m2-1-3-3-and-1-2-9-released</link><guid isPermaLink="true">https://spring.io/blog/2025/02/25/spring-modulith-1-4-m2-1-3-3-and-1-2-9-released</guid><dc:creator><![CDATA[odrotbohm]]></dc:creator><pubDate>Tue, 25 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;I am happy to announce the availability of Spring Modulith 1.4 M2, 1.3.3, and 1.2.9. While the latter contain a few bug fixes and the usual dependency upgrades to the latest Spring Boot releases, the milestone release ships a couple of important new features.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The observability module now automatically creates counters for application events published by modules. A new &lt;code&gt;ModulithEventMetrics&lt;/code&gt; API has been introduced and can be used through &lt;code&gt;ModulithEventMetricsCustomizer&lt;/code&gt; beans registered in the &lt;code&gt;ApplicationContext&lt;/code&gt; (&lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1068&quot;&gt;GH-1068&lt;/a&gt;).&lt;/li&gt;
+&lt;li&gt;The runtime support has been revamped to avoid the dependency on an external library to topologically sort application modules, so that they can be traversed in dependency order (&lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1060&quot;&gt;GH-1060&lt;/a&gt;). This allows assuming a stable module order in the application metadata file that ? previously only created in AOT mode ? is now also written when generating documentation (&lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1063&quot;&gt;GH-1063&lt;/a&gt;). That in turn allows us to avoid the full bootstrap of an &lt;code&gt;ApplicationModules&lt;/code&gt; instance at runtime, for example, to execute &lt;code&gt;ApplicationModuleListener&lt;/code&gt; beans (&lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1062&quot;&gt;GH-1062&lt;/a&gt;, &lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1065&quot;&gt;GH-1065&lt;/a&gt;).&lt;/li&gt;
+&lt;li&gt;The event publication infrastructure has been revamped to now also support structurally identical events (&lt;a href=&quot;https://github.com/spring-projects/spring-modulith/issues/1056&quot;&gt;GH-1056&lt;/a&gt;).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The bugfix releases can be found on Maven Central, the milestone one is available from &lt;a href=&quot;http://repo.spring.io/milestone&quot;&gt;http://repo.spring.io/milestone&lt;/a&gt;. Find more information about the releases in the official change logs for &lt;a href=&quot;https://github.com/spring-projects/spring-modulith/releases/tag/1.2.9&quot;&gt;1.2.9&lt;/a&gt;, &lt;a href=&quot;https://github.com/spring-projects/spring-modulith/releases/tag/1.3.3&quot;&gt;1.3.3&lt;/a&gt;, and &lt;a href=&quot;https://github.com/spring-projects/spring-modulith/releases/tag/1.4.0-M2&quot;&gt;1.4 M2&lt;/a&gt;.&lt;/p&gt;</content:encoded></item></channel></rss>

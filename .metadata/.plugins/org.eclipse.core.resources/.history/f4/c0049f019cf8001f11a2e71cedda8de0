@@ -1,0 +1,6 @@
+package com.puzzlelog.puzzlelog.controller;
+
+public interface Command<T> {
+	
+	 T execute();
+}

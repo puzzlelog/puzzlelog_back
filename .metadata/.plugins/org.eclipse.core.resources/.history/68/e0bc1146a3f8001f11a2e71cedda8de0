@@ -1,0 +1,5 @@
+package com.puzzlelog.puzzlelog.controller;
+
+public class DigitalAlbumController {
+
+}

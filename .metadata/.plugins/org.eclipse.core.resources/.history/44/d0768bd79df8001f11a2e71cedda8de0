@@ -1,0 +1,42 @@
+package com.puzzlelog.puzzlelog.document;
+
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.mysql.cj.x.protobuf.MysqlxDatatypes.Scalar.String;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Document(collection = "pieces") 
+@Getter @Setter
+public class Piece {
+    
+
+    public ObjectId getId() {
+        return id;
+    }
+    public void setId(ObjectId id) {
+        this.id = id;
+    }
+    public ObjectId getDiaryId() {
+        return diaryId;
+    }
+    public void setDiaryId(ObjectId diaryId) {
+        this.diaryId = diaryId;
+    }
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
+    public String getContent() {
+        return content;
+    }
+    public void setContent(String content) {
+        this.content = content;
+    }
+}
+

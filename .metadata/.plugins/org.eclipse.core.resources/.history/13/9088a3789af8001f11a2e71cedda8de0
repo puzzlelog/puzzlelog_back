@@ -1,0 +1,67 @@
+package com.puzzlelog.puzzlelog.command;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.puzzlelog.puzzlelog.controller.Command;
+import com.puzzlelog.puzzlelog.model.ChallengeDocument;
+import com.puzzlelog.puzzlelog.model.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.model.UserProjection;
+import com.puzzlelog.puzzlelog.repository.ChallengeRepository;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+import com.puzzlelog.puzzlelog.repository.UserRepository;
+
+
+//관리자가 is_active=true로 변경하면, user_challenges 컬렉션에 자동 추가됨.
+//중복된 챌린지가 추가되지 않도록 방지.
+public class ActivateChallengeCommand implements Command<Void> {
+    private final ChallengeRepository challengeRepository;
+    private final UserChallengeRepository userChallengeRepository;
+    private final UserRepository userRepository;
+    private final String challengeId;
+
+    public ActivateChallengeCommand(ChallengeRepository challengeRepository, UserChallengeRepository userChallengeRepository, UserRepository userRepository, String challengeId) {
+        this.challengeRepository = challengeRepository;
+        this.userChallengeRepository = userChallengeRepository;
+        this.userRepository = userRepository;
+        this.challengeId = challengeId;
+    }
+
+    @Override
+    public Void execute() {
+        System.out.println("챌린지 활성화 ID: " + challengeId);
+
+        // ✅ 1. 해당 챌린지를 `is_active = true`로 변경
+        Optional<ChallengeDocument> challengeOpt = challengeRepository.findById(challengeId);
+        if (challengeOpt.isPresent()) {
+            ChallengeDocument challenge = challengeOpt.get();
+            challenge.setActive(true);
+            challengeRepository.save(challenge);
+            System.out.println("[DEBUG] 챌린지가 활성화되었습니다!");
+        } else {
+            System.out.println("해당 챌린지가 존재하지 않습니다: " + challengeId);
+            return null;
+        }
+
+        // ✅ 2. MySQL에서 모든 사용자 ID만 가져오기
+        List<UserProjection> allUsers = userRepository.findAllProjectedBy();
+        List<String> allUserIds = allUsers.stream().map(UserProjection::getId).toList();
+        System.out.println("[DEBUG] MySQL에서 조회된 사용자 ID 목록: " + allUserIds);
+
+        // ✅ 3. 모든 사용자에게 챌린지 배포 (중복 방지)
+        for (String userId : allUserIds) {
+        	System.out.println("[DEBUG] 사용자 " + userId + " 처리 중...");
+            Optional<UserChallengeDocument> existingChallenge = userChallengeRepository.findByUserIdAndChallengeId(userId, challengeId);
+            if (existingChallenge.isEmpty()) { // 以묐났 諛⑹�
+            	System.out.println("[DEBUG] 사용자 " + userId + "에게 챌린지 배포 시작...");
+                UserChallengeDocument newUserChallenge = new UserChallengeDocument(userId, challengeId, 0, false);
+                userChallengeRepository.save(newUserChallenge);
+                
+                
+            }
+        }
+
+        return null;
+    }
+}
+

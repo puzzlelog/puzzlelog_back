@@ -1,0 +1,85 @@
+package com.puzzlelog.puzzlelog.service.challenge;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import com.puzzlelog.puzzlelog.config.Command;
+import com.puzzlelog.puzzlelog.document.ChallengeDocument;
+import com.puzzlelog.puzzlelog.document.PointDocument;
+import com.puzzlelog.puzzlelog.document.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.ChallengeRepository;
+import com.puzzlelog.puzzlelog.repository.PointRepository;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+
+//챌린지 완료 처리 및 포인트 지급
+public class CompleteChallengeCommand implements Command<Void> {
+	private final UserChallengeRepository userChallengeRepository;
+ private final ChallengeRepository challengeRepository;  // 🔹 추가
+ private final PointRepository pointRepository;
+ private final String userId;
+ private final String relatedChallengeId;
+
+	public CompleteChallengeCommand(UserChallengeRepository userChallengeRepository,
+			                        ChallengeRepository challengeRepository, 
+			                        PointRepository pointRepository, 
+			                        String userId,
+			                        String relatedChallengeId) {
+		this.userChallengeRepository = userChallengeRepository;
+		this.challengeRepository = challengeRepository;
+		this.pointRepository = pointRepository;
+		this.userId = userId;
+		this.relatedChallengeId = relatedChallengeId;
+	}
+
+	@Override
+	public Void execute() {
+	    System.out.println("[DEBUG] 챌린지 완료 여부 확인 시작");
+
+	    Optional<UserChallengeDocument> userChallengeOpt = userChallengeRepository.findByUserIdAndChallengeId(userId, relatedChallengeId);
+	    
+	    
+	    if (userChallengeOpt.isPresent()) {
+	        UserChallengeDocument userChallenge = userChallengeOpt.get();
+
+	        Optional<ChallengeDocument> challengeOpt = challengeRepository.findById(relatedChallengeId);
+	        if (challengeOpt.isPresent()) {
+	            ChallengeDocument challenge = challengeOpt.get();// 여기 까지
+
+	            if (userChallenge.getProgress() >= challenge.getTargetProgress()) {
+	                userChallenge.setCompleted(true);
+	                userChallenge.setCompletedAt(LocalDate.now());
+	                System.out.println(userChallenge.toString());
+	                userChallengeRepository.save(userChallenge);
+
+	                System.out.println("[DEBUG] 챌린지 완료됨! 포인트 지급 시작...");
+
+	                // ✅ 기존 포인트가 있는지 확인
+	                Optional<PointDocument> existingPoint = pointRepository.findByUserIdAndRelatedChallengeId(userId, relatedChallengeId);
+	                if (existingPoint.isEmpty()) {
+	                    int rewardPoints = challenge.getRewardPoints();
+	                    PointDocument point = new PointDocument(
+	                            userId, 
+	                            "챌린지 완료",  
+	                            rewardPoints, 
+	                            "챌린지 완료 보상",  
+	                            relatedChallengeId
+	                    );
+
+	                    // 🔥 포인트 객체가 올바르게 생성되었는지 확인
+	                    System.out.println("[DEBUG] 생성된 포인트 객체: " + point.toString());
+
+	                    pointRepository.save(point);
+	                    System.out.println("[DEBUG] 포인트 지급 완료! 지급된 포인트: " + rewardPoints);
+	                } else {
+	                    System.out.println("[DEBUG] 이미 지급된 포인트가 존재함. 중복 지급 방지됨.");
+	                }
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+
+}
+
+

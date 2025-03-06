@@ -1,0 +1,6 @@
+package com.puzzlelog.puzzlelog.document;
+
+public interface UserProjection {
+    String getId(); // ?úÖ ?Ç¨?ö©?ûê IDÎß? Í∞??†∏?ò¥
+}
+

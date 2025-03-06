@@ -1,0 +1,22 @@
+package com.puzzlelog.puzzlelog.service.challenge;
+
+import com.puzzlelog.puzzlelog.config.Command;
+import com.puzzlelog.puzzlelog.document.ChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.ChallengeRepository;
+
+// 관리자가 새로운 챌린지를 생성
+public class CreateChallengeCommand implements Command<ChallengeDocument> {
+    private final ChallengeRepository challengeRepository;
+    private final ChallengeDocument challenge;
+
+    public CreateChallengeCommand(ChallengeRepository challengeRepository, ChallengeDocument challenge) {
+        this.challengeRepository = challengeRepository;
+        this.challenge = challenge;
+    }
+
+    @Override
+    public ChallengeDocument execute() {
+        return challengeRepository.save(challenge);
+    }
+}
+

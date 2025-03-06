@@ -1,0 +1,18 @@
+package com.puzzlelog.puzzlelog.repository;
+
+import java.util.List;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+
+import com.puzzlelog.puzzlelog.document.DiaryDto;
+import com.puzzlelog.puzzlelog.document.PieceDto;
+
+public interface DiaryRepository extends MongoRepository<DiaryDto, String> {
+
+	@Query("{'user_id': ?0, 'is_deleted': false}")
+	List<DiaryDto> findByUserId(String userId); // 특정 사용자의 일기 조회
+	
+	@Query("{'is_deleted': false}")
+	List<DiaryDto> findAllActive();
+}

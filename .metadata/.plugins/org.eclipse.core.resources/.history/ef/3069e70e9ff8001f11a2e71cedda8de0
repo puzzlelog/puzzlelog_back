@@ -1,0 +1,5 @@
+package com.puzzlelog.puzzlelog.document;
+
+public interface UserProjection {
+    String getId(); // ✅ 사용자 ID만 가져옴
+}

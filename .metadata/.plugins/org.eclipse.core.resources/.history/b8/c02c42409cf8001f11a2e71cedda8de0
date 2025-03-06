@@ -1,0 +1,29 @@
+package com.puzzlelog.puzzlelog.command;
+
+import java.util.List;
+
+import com.puzzlelog.puzzlelog.config.Command;
+import com.puzzlelog.puzzlelog.model.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+
+//✅ 사용자의 챌린지 진행 상태 조회 (완료 여부 포함)
+public class FindUserChallengesCommand implements Command<List<UserChallengeDocument>> {
+ private final UserChallengeRepository userChallengeRepository;
+ private final String userId;
+ private final boolean includeCompleted; // 완료된 챌린지도 조회할지 여부
+
+ public FindUserChallengesCommand(UserChallengeRepository userChallengeRepository, String userId, boolean includeCompleted) {
+     this.userChallengeRepository = userChallengeRepository;
+     this.userId = userId;
+     this.includeCompleted = includeCompleted;
+ }
+
+ @Override
+ public List<UserChallengeDocument> execute() {
+     if (includeCompleted) {
+         return userChallengeRepository.findByUserId(userId);
+     } else {
+         return userChallengeRepository.findByUserIdAndIsCompleted(userId, false); // 진행 중인 챌린지만 조회
+     }
+ }
+}

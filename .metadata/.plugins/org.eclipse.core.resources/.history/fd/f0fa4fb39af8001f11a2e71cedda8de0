@@ -1,0 +1,71 @@
+package com.puzzlelog.puzzlelog.command;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import com.puzzlelog.puzzlelog.controller.Command;
+import com.puzzlelog.puzzlelog.model.ChallengeDocument;
+import com.puzzlelog.puzzlelog.model.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.ChallengeRepository;
+import com.puzzlelog.puzzlelog.repository.PointRepository;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+
+// �쐟 �궗�슜�옄媛� 梨뚮┛吏�瑜� �닔�뻾�븷 �븣 吏꾪뻾�룄(`progress`)瑜� �뾽�뜲�씠�듃�븯�뒗 Command
+public class UpdateChallengeProgressCommand implements Command<Void> {
+    private final UserChallengeRepository userChallengeRepository;
+    private final ChallengeRepository challengeRepository;
+    private final PointRepository pointRepository;
+    private final String userId;
+    private final String challengeId;
+
+    public UpdateChallengeProgressCommand(UserChallengeRepository userChallengeRepository, ChallengeRepository challengeRepository, PointRepository pointRepository, String userId, String challengeId) {
+        this.userChallengeRepository = userChallengeRepository;
+        this.challengeRepository = challengeRepository;
+        this.pointRepository = pointRepository;
+        this.userId = userId;
+        this.challengeId = challengeId;
+    }
+
+    @Override
+    public Void execute() {
+        System.out.println("[DEBUG] 梨뚮┛吏� 吏꾪뻾�룄 �뾽�뜲�씠�듃 �떆�옉");
+
+        Optional<UserChallengeDocument> challengeOpt = userChallengeRepository.findByUserIdAndChallengeId(userId, challengeId);
+        if (challengeOpt.isPresent()) {
+            UserChallengeDocument userChallenge = challengeOpt.get();
+            System.out.println("[DEBUG] 湲곗〈 吏꾪뻾�룄: " + userChallenge.getProgress());
+
+            Optional<ChallengeDocument> challengeDocOpt = challengeRepository.findById(challengeId);
+            if (challengeDocOpt.isPresent()) {
+                ChallengeDocument challengeDoc = challengeDocOpt.get();
+                int targetProgress = challengeDoc.getTargetProgress();
+                System.out.println("[DEBUG] 紐⑺몴 吏꾪뻾�룄: " + targetProgress);
+
+                userChallenge.setProgress(userChallenge.getProgress() + 1);
+                userChallenge.setLastUpdated(LocalDate.now());
+                System.out.println("[DEBUG] �뾽�뜲�씠�듃�맂 吏꾪뻾�룄: " + userChallenge.getProgress());
+                
+                userChallengeRepository.save(userChallenge); // 吏꾪뻾�룄 Update 遺�遺�.
+
+                //�뾽�뜲�씠�듃 �썑, 鍮꾧탳�빐蹂닿린
+                if (userChallenge.getProgress() >= targetProgress) {
+                    userChallenge.setCompleted(true);
+                    userChallenge.setCompletedAt(LocalDate.now());
+                    System.out.println("[DEBUG] 梨뚮┛吏� �셿猷� 泥섎━�맖!");
+
+                    // �쐟 �윍� `CompleteChallengeCommand` �떎�뻾 �뿬遺� 濡쒓렇 異붽�
+                    System.out.println("[DEBUG] CompleteChallengeCommand �떎�뻾!");
+
+                    CompleteChallengeCommand completeChallengeCommand = new CompleteChallengeCommand(
+                        userChallengeRepository, challengeRepository, pointRepository, userId, challengeId
+                    );
+                    completeChallengeCommand.execute();  
+                }
+
+                
+            }
+        }
+        return null;
+    }
+
+}

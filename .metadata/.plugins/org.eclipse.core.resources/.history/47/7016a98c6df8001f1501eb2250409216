@@ -1,0 +1,13 @@
+eclipse.preferences.version=1
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/ActivateChallengeCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/CancelUserChallengeCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/CompleteChallengeCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/FindUserChallengesCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/GetActiveChallengesCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/command/UpdateChallengeProgressCommand.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/controller/ChallengePointController.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/model/PointDocument.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/model/UserChallengeDocument.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/model/UserProjection.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/repository/PointRepository.java=UTF-8
+encoding//src/main/java/com/puzzlelog/puzzlelog/repository/UserChallengeRepository.java=UTF-8

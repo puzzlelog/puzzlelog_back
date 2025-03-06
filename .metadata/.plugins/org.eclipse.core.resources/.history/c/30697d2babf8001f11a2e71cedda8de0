@@ -1,0 +1,98 @@
+package com.puzzlelog.puzzlelog.document;
+
+import java.time.Instant;
+import java.util.List;
+
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import com.mysql.cj.x.protobuf.MysqlxDatatypes.Scalar.String;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Document(collection = "pieces")
+@Getter @Setter
+public class PieceDocument {
+
+    @Id
+    private String id; // MongoDB의 ObjectId
+    @Field("user_id")
+    private String userId; // MySQL users 테이블의 id 참조
+    private String type; // ["text", "image", "video", "audio"]
+    private String content;
+    private List<String> tags;
+    private Location location;
+    @Field("media_id")
+    private String mediaId; // medio 컬렉션 참조
+    @Field("is_private")
+    private boolean isPrivate;
+    @Field("created_at")
+    private Instant createdAt;
+    @Field("is_deleted")
+    private boolean isDeleted = false; // 기본값 false
+    
+    // 추가된 diaryId 필드
+    @Field("diary_id") // MongoDB에서 사용할 필드명
+    private String diaryId; // 각 PieceDocument가 참조하는 Diary의 ID
+
+    // 기본 생성자
+    public PieceDocument() {
+    }
+
+    // 생성자
+    public PieceDocument(String userId, String type, String content, List<String> tags, Location location, String mediaId,
+            boolean isPrivate, Instant createdAt, boolean isDeleted, String diaryId) {
+        this.userId = userId;
+        this.type = type;
+        this.content = content;
+        this.tags = tags;
+        this.location = location;
+        this.mediaId = mediaId;
+        this.isPrivate = isPrivate;
+        this.createdAt = createdAt;
+        this.isDeleted = isDeleted;
+        this.diaryId = diaryId; // diaryId 필드 추가
+    }
+
+    // 나머지 Getter & Setter
+    public String getDiaryId() {
+        return diaryId;
+    }
+
+    public void setDiaryId(String diaryId) {
+        this.diaryId = diaryId;
+    }
+
+    // 위치 정보 내장 클래스
+    public static class Location {
+        private String type;
+        private List<String> coordinates;
+
+        public Location() {
+        }
+
+        public Location(String type, List<String> coordinates) {
+            this.type = type;
+            this.coordinates = coordinates;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public List<String> getCoordinates() {
+            return coordinates;
+        }
+
+        public void setCoordinates(List<String> coordinates) {
+            this.coordinates = coordinates;
+        }
+    }
+}

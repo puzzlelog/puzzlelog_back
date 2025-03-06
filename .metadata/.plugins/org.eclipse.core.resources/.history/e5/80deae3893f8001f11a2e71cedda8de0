@@ -1,0 +1,26 @@
+# ========== Application Name ==========
+spring.application.name=puzzlelog
+
+# ========== Server Configuration ==========
+server.port=8080
+
+spring.docker.compose.enabled=false
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+# ========== MySQL Configuration ==========
+spring.datasource.url=jdbc:mysql://localhost:3306/puzzlelog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=1234
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# MongoDB URI \uC124\uC815 (MongoConfig\uC5D0\uC11C MongoTemplate \uC124\uC815\uD55C \uACBD\uC6B0)
+spring.data.mongodb.uri=mongodb://localhost:27017/puzzlelog
+
+# JPA \uC124\uC815 (JPA\uB97C \uC0AC\uC6A9\uD560 \uACBD\uC6B0)
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+
+# ========== Logging Configuration ==========
+logging.level.root=DEBUG
+logging.level.org.springframework=INFO
+

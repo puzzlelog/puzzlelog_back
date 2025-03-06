@@ -1,0 +1,15 @@
+package com.puzzlelog.puzzlelog.repository;
+
+import java.time.Instant;
+import java.util.List;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.puzzlelog.puzzlelog.dto.EmotionDto;
+
+public interface EmotionDao extends MongoRepository<EmotionDto, String> {
+
+	List<EmotionDto> findByUserId(String userId);
+	EmotionDto findByUserIdAndDate(String userId, Instant date);
+	List<EmotionDto> findByUserIdAndDateBetween(String userId, Instant startDate, Instant endDate);
+}

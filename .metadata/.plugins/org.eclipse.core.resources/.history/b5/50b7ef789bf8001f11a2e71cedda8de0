@@ -1,0 +1,58 @@
+package com.puzzlelog.puzzlelog.controller;
+
+
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.puzzlelog.puzzlelog.model.Album;
+import com.puzzlelog.puzzlelog.service.AlbumService;
+
+@RestController
+@RequestMapping("/api/albums")
+public class AlbumController {
+	
+	@Autowired
+    private AlbumService albumService;
+	
+
+    
+    
+
+    // �궗�슜�옄蹂� �븿踰� 紐⑸줉 議고쉶
+    @GetMapping("/{userId}")
+    public ResponseEntity<List<Album>> getUserAlbums(@PathVariable (value = "userId") String userId) {
+    	
+    	System.out.println("userId: "+userId);
+        return ResponseEntity.ok(albumService.getAlbumsByUser(userId));
+    }
+
+    // �듅�젙 �븿踰� �긽�꽭 議고쉶
+    @GetMapping("/{albumId}/{userId}")
+    public ResponseEntity<Album> getAlbumById(@PathVariable ( value = "albumId") String albumId, @PathVariable (value = "userId") String userId) {
+        return ResponseEntity.ok(albumService.getAlbumById(albumId, userId));
+    }
+
+    
+	// �쐟 �븿踰� 寃곗젣 �셿猷� 泥섎━
+	@PostMapping("/{albumId}/{userId}/purchase")
+	public ResponseEntity<String> purchaseAlbum(@PathVariable("albumId") String albumId,@PathVariable("userId") String userId) {
+		albumService.purchaseAlbum(albumId, userId);
+		return ResponseEntity.ok("寃곗젣媛� �셿猷뚮릺�뿀�뒿�땲�떎.");
+	}
+    
+    
+	
+
+
+}
+

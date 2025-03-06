@@ -1,0 +1,71 @@
+package com.puzzlelog.puzzlelog.service.challenge;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import com.puzzlelog.puzzlelog.config.Command;
+import com.puzzlelog.puzzlelog.document.ChallengeDocument;
+import com.puzzlelog.puzzlelog.document.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.ChallengeRepository;
+import com.puzzlelog.puzzlelog.repository.PointRepository;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+
+//✅ 사용자가 챌린지를 수행할 때 진행도(`progress`)를 업데이트하는 Command
+public class UpdateChallengeProgressCommand implements Command<Void> {
+ private final UserChallengeRepository userChallengeRepository;
+ private final ChallengeRepository challengeRepository;
+ private final PointRepository pointRepository;
+ private final String userId;
+ private final String challengeId;
+
+ public UpdateChallengeProgressCommand(UserChallengeRepository userChallengeRepository, ChallengeRepository challengeRepository, PointRepository pointRepository, String userId, String challengeId) {
+     this.userChallengeRepository = userChallengeRepository;
+     this.challengeRepository = challengeRepository;
+     this.pointRepository = pointRepository;
+     this.userId = userId;
+     this.challengeId = challengeId;
+ }
+
+ @Override
+ public Void execute() {
+     System.out.println("[DEBUG] 챌린지 진행도 업데이트 시작");
+
+     Optional<UserChallengeDocument> challengeOpt = userChallengeRepository.findByUserIdAndChallengeId(userId, challengeId);
+     if (challengeOpt.isPresent()) {
+         UserChallengeDocument userChallenge = challengeOpt.get();
+         System.out.println("[DEBUG] 기존 진행도: " + userChallenge.getProgress());
+
+         Optional<ChallengeDocument> challengeDocOpt = challengeRepository.findById(challengeId);
+         if (challengeDocOpt.isPresent()) {
+             ChallengeDocument challengeDoc = challengeDocOpt.get();
+             int targetProgress = challengeDoc.getTargetProgress();
+             System.out.println("[DEBUG] 목표 진행도: " + targetProgress);
+
+             userChallenge.setProgress(userChallenge.getProgress() + 1);
+             userChallenge.setLastUpdated(LocalDate.now());
+             System.out.println("[DEBUG] 업데이트된 진행도: " + userChallenge.getProgress());
+             
+             userChallengeRepository.save(userChallenge); // 진행도 Update 부분.
+
+             //업데이트 후, 비교해보기
+             if (userChallenge.getProgress() >= targetProgress) {
+                 userChallenge.setCompleted(true);
+                 userChallenge.setCompletedAt(LocalDate.now());
+                 System.out.println("[DEBUG] 챌린지 완료 처리됨!");
+
+                 // ✅ 🔥 `CompleteChallengeCommand` 실행 여부 로그 추가
+                 System.out.println("[DEBUG] CompleteChallengeCommand 실행!");
+
+                 CompleteChallengeService completeChallengeCommand = new CompleteChallengeService(
+                     userChallengeRepository, challengeRepository, pointRepository, userId, challengeId
+                 );
+                 completeChallengeCommand.execute();  
+             }
+
+             
+         }
+     }
+     return null;
+ }
+
+}

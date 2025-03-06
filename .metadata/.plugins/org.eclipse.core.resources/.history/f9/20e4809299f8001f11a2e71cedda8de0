@@ -1,0 +1,90 @@
+package com.puzzlelog.puzzlelog.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.puzzlelog.puzzlelog.entity.Friend;
+import com.puzzlelog.puzzlelog.entity.FriendStatus;
+import com.puzzlelog.puzzlelog.repository.FriendRepository;
+import com.puzzlelog.puzzlelog.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+public class FriendService {
+    private final FriendRepository friendRepository;
+    private final UserRepository userRepository;
+
+    // ✅ 생성자를 명시적으로 추가
+    public FriendService(FriendRepository friendRepository, UserRepository userRepository) {
+        this.friendRepository = friendRepository;
+        this.userRepository = userRepository;
+    }
+
+    // 移쒓뎄 �슂泥� 蹂대궡湲�
+    public ResponseEntity<String> sendFriendRequest(String userId, String friendId) {
+        if (!userRepository.existsByUserId(userId) || !userRepository.existsByUserId(friendId)) {
+            return ResponseEntity.badRequest().body("議댁옱�븯吏� �븡�뒗 �궗�슜�옄�엯�땲�떎.");
+        }
+
+        // 以묐났 泥댄겕
+        if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent() ||
+            friendRepository.findByUserIdAndFriendId(friendId, userId).isPresent()) {
+            return ResponseEntity.badRequest().body("�씠誘� 移쒓뎄 �슂泥� �삉�뒗 愿�怨꾧� 議댁옱�빀�땲�떎.");
+        }
+
+        // 移쒓뎄 �슂泥� �깮�꽦
+        Friend friendRequest = new Friend(userId, friendId, FriendStatus.PENDING);
+        friendRepository.save(friendRequest);
+        return ResponseEntity.ok("移쒓뎄 �슂泥��씠 �꽦怨듭쟻�쑝濡� �쟾�넚�릺�뿀�뒿�땲�떎.");
+    }
+
+    // 移쒓뎄 �슂泥� �닔�씫
+    public ResponseEntity<String> acceptFriendRequest(String userId, String friendId) {
+        Optional<Friend> friendOpt = friendRepository.findByUserIdAndFriendId(friendId, userId);
+        if (friendOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("移쒓뎄 �슂泥��씠 �뾾�뒿�땲�떎.");
+        }
+
+        Friend friend = friendOpt.get();
+        friend.setStatus(FriendStatus.ACCEPTED);
+        friendRepository.save(friend);
+
+        // �긽��諛⑸룄 移쒓뎄 紐⑸줉�뿉 異붽�
+        friendRepository.save(new Friend(userId, friendId, FriendStatus.ACCEPTED));
+
+        return ResponseEntity.ok("移쒓뎄 �슂泥��쓣 �닔�씫�뻽�뒿�땲�떎.");
+    }
+
+    // 移쒓뎄 紐⑸줉 遺덈윭�삤湲�
+    public List<Friend> getFriends(String userId) {
+        return friendRepository.findByUserIdAndStatus(userId, FriendStatus.ACCEPTED);
+    }
+
+    // 移쒓뎄 �궘�젣
+    public ResponseEntity<String> deactivateFriend(String userId, String friendId) {
+        Optional<Friend> friendOpt1 = friendRepository.findByUserIdAndFriendId(userId, friendId);
+        Optional<Friend> friendOpt2 = friendRepository.findByUserIdAndFriendId(friendId, userId);
+
+        if (friendOpt1.isPresent()) {
+            Friend friend = friendOpt1.get();
+            friend.setStatus(FriendStatus.DEACTIVATED);
+            friendRepository.save(friend);
+        }
+
+        if (friendOpt2.isPresent()) {
+            Friend friend = friendOpt2.get();
+            friend.setStatus(FriendStatus.DEACTIVATED);
+            friendRepository.save(friend);
+        }
+
+        if (friendOpt1.isPresent() || friendOpt2.isPresent()) {
+            return ResponseEntity.ok("移쒓뎄 愿�怨꾧� 鍮꾪솢�꽦�솕�릺�뿀�뒿�땲�떎.");
+        } else {
+            return ResponseEntity.badRequest().body("�빐�떦 移쒓뎄 愿�怨꾨�� 李얠쓣 �닔 �뾾�뒿�땲�떎.");
+        }
+    }
+}

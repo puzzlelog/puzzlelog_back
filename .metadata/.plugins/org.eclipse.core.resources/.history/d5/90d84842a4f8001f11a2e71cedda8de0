@@ -1,0 +1,69 @@
+package com.puzzlelog.puzzlelog.document;
+
+
+import java.util.List;
+
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.puzzlelog.puzzlelog.config.ObjectIdSerializer;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Document(collection = "album") // MongoDB 컬렉션 지정
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+public class AlbumDocument {
+    @Id
+    @JsonSerialize(using = ObjectIdSerializer.class) // ?�� ObjectId�? 문자?���? �??��
+    private ObjectId id; 
+
+    private String userId; 
+    private String title; 
+    private List<String> diaryId;
+    private boolean purchased;
+    
+    
+	public ObjectId getId() {
+		return id;
+	}
+	public void setId(ObjectId id) {
+		this.id = id;
+	}
+	public String getUserId() {
+		return userId;
+	}
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	public List<String> getDiaryId() {
+		return diaryId;
+	}
+	public void setDiaryId(List<String> diaryId) {
+		this.diaryId = diaryId;
+	}
+	public boolean isPurchased() {
+		return purchased;
+	}
+	public void setPurchased(boolean purchased) {
+		this.purchased = purchased;
+	}
+    
+    
+	
+	
+	
+	
+}
+

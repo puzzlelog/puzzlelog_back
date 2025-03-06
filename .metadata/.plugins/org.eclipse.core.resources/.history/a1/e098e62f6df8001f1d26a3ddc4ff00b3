@@ -1,0 +1,19 @@
+package com.puzzlelog.puzzlelog.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.puzzlelog.challenge.model.PointDocument;
+
+public interface PointRepository extends MongoRepository<PointDocument, String> {
+    
+	// �듅�젙 �궗�슜�옄�쓽 �룷�씤�듃 �궡�뿭 議고쉶
+	List<PointDocument> findByUserId(String userId);
+	
+	
+	 // �쐟 �듅�젙 �궗�슜�옄�� 梨뚮┛吏� ID濡� �룷�씤�듃 吏�湲� �뿬遺� �솗�씤 (以묐났 吏�湲� 諛⑹�)
+	 Optional<PointDocument> findByUserIdAndRelatedChallengeId(String userId, String relatedChallengeId);
+}
+

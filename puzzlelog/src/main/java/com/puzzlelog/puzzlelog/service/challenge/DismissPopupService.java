@@ -1,0 +1,33 @@
+package com.puzzlelog.puzzlelog.service.challenge;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import com.puzzlelog.puzzlelog.config.Command;
+import com.puzzlelog.puzzlelog.document.UserChallengeDocument;
+import com.puzzlelog.puzzlelog.repository.UserChallengeRepository;
+
+//사용자가 팝업을 닫으면 일정 기간 동안 표시되지 않도록 설정
+public class DismissPopupService implements Command<Void> {
+ private final UserChallengeRepository userChallengeRepository;
+ private final String userId;
+ private final String challengeId;
+
+ public DismissPopupService(UserChallengeRepository userChallengeRepository, String userId, String challengeId) {
+     this.userChallengeRepository = userChallengeRepository;
+     this.userId = userId;
+     this.challengeId = challengeId;
+ }
+
+ @Override
+ public Void execute() {
+     Optional<UserChallengeDocument> challengeOpt = userChallengeRepository.findById(challengeId);
+     if (challengeOpt.isPresent()) {
+         UserChallengeDocument challenge = challengeOpt.get();
+         challenge.setLastPopupDismissed(LocalDate.now());
+         userChallengeRepository.save(challenge);
+     }
+     return null;
+ }
+}
+

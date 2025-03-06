@@ -1,0 +1,106 @@
+package com.puzzlelog.puzzlelog.controller;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.puzzlelog.puzzlelog.dao.PieceDao;
+import com.puzzlelog.puzzlelog.dto.PieceDto;
+
+@RestController
+@RequestMapping("/api")
+public class PieceController {
+
+	@Autowired
+    private PieceDao pieceDao;
+
+	@PostMapping("/addPiece")
+	public ResponseEntity<String> addPiece(@RequestBody PieceDto piece) {
+	    if (piece == null) {
+	        return ResponseEntity.badRequest().body("Invalid piece data");
+	    }
+
+	    try {
+	        piece.setCreatedAt(Instant.now());  // 생성 시간 설정
+	        pieceDao.save(piece);  // MongoDB에 조각 저장
+	        return ResponseEntity.status(HttpStatus.CREATED).body("Piece saved successfully");
+	    } catch (Exception e) {
+	        e.printStackTrace();  // 예외 상세 정보 출력
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error saving piece");
+	    }
+	}
+
+	@GetMapping("/getPiece")
+    public ResponseEntity<List<PieceDto>> getPiece(@RequestParam(required = false) String userId) {
+        try {
+            List<PieceDto> pieces;
+            if (userId != null) {
+                pieces = pieceDao.findByUserId(userId);  // userId로 조각 조회
+            } else {
+                pieces = pieceDao.findAllActive();  // 모든 조각 조회
+            }
+
+            if (pieces.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pieces);
+            }
+
+            return ResponseEntity.ok(pieces);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+	
+	@PatchMapping("/updatePiece")
+	public ResponseEntity<String> updatePiece(@RequestParam String id, @RequestBody PieceDto updatedPiece) {
+		try {
+			Optional<PieceDto> existingPieceOptional = pieceDao.findById(id);
+			if (existingPieceOptional.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Piece not found");
+			}
+			
+			PieceDto existingPiece = existingPieceOptional.get();
+			
+			// 업데이트할 필드 적용 (userId와 createdAt은 변경하지 않음)
+			existingPiece.setType(updatedPiece.getType());
+            existingPiece.setContent(updatedPiece.getContent());
+            existingPiece.setTags(updatedPiece.getTags());
+            existingPiece.setLocation(updatedPiece.getLocation());
+            existingPiece.setPrivate(updatedPiece.isPrivate());
+            
+            pieceDao.save(existingPiece);
+            return ResponseEntity.ok("Piece updated successfully");
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating piece");
+		}
+	}
+	
+	@PatchMapping("/deletePiece")
+	public ResponseEntity<String> deletePiece(@RequestParam String id) {
+		try {
+			Optional<PieceDto> existingPieceOptional = pieceDao.findById(id);
+			if (existingPieceOptional.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Piece not found");
+			}
+			
+			PieceDto existingPiece = existingPieceOptional.get();
+			existingPiece.setDeleted(true); // 논리적 삭제 처리
+			pieceDao.save(existingPiece);
+			
+			return ResponseEntity.ok("Piece deleted successfully");
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting piece");
+		}
+	}
+}

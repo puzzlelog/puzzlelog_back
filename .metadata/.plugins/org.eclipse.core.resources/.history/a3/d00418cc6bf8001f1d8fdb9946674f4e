@@ -1,0 +1,6 @@
+package com.puzzlelog.puzzlelog.model;
+
+public interface Command<T> {
+	
+	 T execute();
+}

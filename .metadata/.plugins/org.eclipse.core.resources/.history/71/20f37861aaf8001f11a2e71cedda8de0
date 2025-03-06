@@ -1,0 +1,34 @@
+package com.puzzlelog.puzzlelog.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.List;
+
+import com.puzzlelog.puzzlelog.document.UserProjection;
+import com.puzzlelog.puzzlelog.entity.UserEntity;
+
+public interface UserRepository extends JpaRepository<UserEntity, Integer> {
+    Optional<UserEntity> findByEmail(String email);
+    Optional<UserEntity> findByNum(Integer num); // num을 기반으로 검색
+    Optional<UserEntity> findByUserId(String userId);
+
+    
+    @Transactional
+    @Modifying
+    @Query("UPDATE User u SET u.status = 'DELETED' WHERE u.userId = :userId")
+    void deactivateUserByUserId(String userId);
+    
+    boolean existsByEmail(String email);
+    boolean existsByUserId(String userId);
+    
+    boolean existsByNum(Integer num);// id 컬럼 존재 여부 확인 (String 타입)
+    
+    // ✅ 모든 사용자 ID만 가져오는 메서드
+    List<UserProjection> findAllProjectedBy();
+    
+    List<UserEntity> findByAlarmConsentTrue();
+}

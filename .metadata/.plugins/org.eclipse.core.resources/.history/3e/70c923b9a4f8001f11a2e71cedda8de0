@@ -1,0 +1,91 @@
+package com.puzzlelog.puzzlelog.document;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.LocalDateTime;
+
+@Document(collection = "points")
+public class PointDocument {
+
+    @Id
+    private String id;
+
+    private String userId;
+    private String type;
+    private int amount;
+    private String description;
+    private String relatedChallengeId; // ?�� 챌린�??? ?���?
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    
+
+	public PointDocument() {}
+
+    public PointDocument(String userId, String type, int amount, String description, String relatedChallengeId) {
+        this.userId = userId;
+        this.type = type;
+        this.amount = amount;
+        this.description = description;
+        this.relatedChallengeId = relatedChallengeId; // ✅ 챌린지와 연결
+        this.createdAt = LocalDateTime.now(); // ?��?��?���? ?��?�� ?���? ???��
+    }
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public int getAmount() {
+		return amount;
+	}
+
+	public void setAmount(int amount) {
+		this.amount = amount;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getRelatedChallengeId() {
+		return relatedChallengeId;
+	}
+
+	public void setRelatedChallengeId(String relatedChallengeId) {
+		this.relatedChallengeId = relatedChallengeId;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+    
+   
+}
