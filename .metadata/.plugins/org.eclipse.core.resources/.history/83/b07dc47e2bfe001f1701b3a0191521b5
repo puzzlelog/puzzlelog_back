@@ -1,0 +1,5 @@
+package com.puzzlelog.api.config.old;
+
+public interface Command<T> {
+	 T execute();
+}

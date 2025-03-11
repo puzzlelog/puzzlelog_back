@@ -1,0 +1,5 @@
+package com.puzzlelog.api.dao.entity;
+
+public class User {
+
+}

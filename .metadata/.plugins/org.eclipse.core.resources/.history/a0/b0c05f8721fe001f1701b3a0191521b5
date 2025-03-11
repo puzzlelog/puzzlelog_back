@@ -1,0 +1,5 @@
+package com.puzzlelog.api.controller;
+
+public class UserController {
+
+}

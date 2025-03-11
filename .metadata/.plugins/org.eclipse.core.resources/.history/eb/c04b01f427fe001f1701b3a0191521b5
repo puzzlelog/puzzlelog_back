@@ -1,0 +1,57 @@
+package com.puzzlelog.api.service;
+
+import java.time.LocalDate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.puzzlelog.api.dao.entity.User;
+import com.puzzlelog.api.dto.request.LoginRequest;
+import com.puzzlelog.api.dto.request.SignupRequest;
+import com.puzzlelog.api.dto.response.SignupResponse;
+import com.puzzlelog.api.repository.mysql.UserRepository;
+
+@Service
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    // 회원가입 로직 (Entity → Response DTO)
+    @Transactional
+    public SignupResponse registerUser(SignupRequest request) {
+        if (userRepository.existsByUserId(request.getUserId())) {
+            throw new RuntimeException("이미 존재하는 아이디입니다.");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("이미 존재하는 이메일입니다.");
+        }
+
+        User savedUser = userRepository.save(User.builder()
+                .userId(request.getUserId())
+                .userPwd(passwordEncoder.encode(request.getUserPwd()))
+                .email(request.getEmail())
+                .birthDate(request.getBirthDate() != null ?
+                        LocalDate.parse(request.getBirthDate()) : null)
+                .gender(request.getGender() != null ?
+                        User.Gender.valueOf(request.getGender()) : null)
+                .build());
+
+        return SignupResponse.builder()
+                .id(savedUser.getId())
+                .userId(savedUser.getUserId())
+                .email(savedUser.getEmail())
+                .build();
+    }
+
+    // 로그인 로직은 단순히 인증만 반환하므로 boolean 유지
+    public boolean validateUser(LoginRequest request) {
+        return userRepository.findByUserId(request.getUserId())
+                .map(user -> passwordEncoder.matches(request.getUserPwd(), user.getUserPwd()))
+                .orElse(false);
+    }
+}

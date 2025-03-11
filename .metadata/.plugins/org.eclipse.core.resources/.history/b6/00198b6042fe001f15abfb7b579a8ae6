@@ -1,0 +1,43 @@
+package com.puzzlelog.api.config;
+
+import lombok.*;
+
+// 공통 응답 객체 (API Response Wrapper)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ApiResponse<T> {
+    private boolean success;   // 성공 여부 (true/false)
+    private String message;    // 응답 메시지
+    private T data;            // 실제 데이터
+
+    // 성공 응답 (데이터와 메시지 포함)
+    public static <T> ApiResponse<T> success(T data, String message) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .data(data)
+                .build();
+    }
+
+    // 성공 응답 (데이터만 포함)
+    public static <T> ApiResponse<T> success(T data) {
+        return success(data, null);
+    }
+
+    // 성공 응답 (메시지만 포함)
+    public static <T> ApiResponse<T> successMessage(String message) {
+        return success(null, message);
+    }
+
+    // 실패 응답 (메시지 포함)
+    public static <T> ApiResponse<T> fail(String message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .data(null)
+                .build();
+    }
+}

@@ -1,0 +1,11 @@
+package com.puzzlelog.api.dto.request;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserUpdateRequest {
+    private String nickname;
+    private Boolean isAlarm;
+    private String profileImg;
+}

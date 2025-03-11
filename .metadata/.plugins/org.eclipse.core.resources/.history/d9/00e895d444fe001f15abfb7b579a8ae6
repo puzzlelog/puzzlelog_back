@@ -1,0 +1,31 @@
+package com.puzzlelog.api.repository.mysql;
+
+import com.puzzlelog.api.dao.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Integer> {
+    
+    Optional<User> findByUserId(String userId);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByNickname(String nickname);
+    
+    // 로그인 및 중복체크 시 사용
+    boolean existsByUserId(String userId);
+    boolean existsByEmail(String email);
+    
+    // 날짜 체크 사용
+    @Query("SELECT u FROM User u WHERE " +
+            "(:email IS NULL OR u.email = :email) AND " +
+            "(:userId IS NULL OR u.userId = :userId) AND " +
+            "(:nickname IS NULL OR u.nickname = :nickname) AND " +
+            "(:createdAtFrom IS NULL OR u.createdAt >= :createdAtFrom) AND " +
+            "(:createdAtTo IS NULL OR u.createdAt <= :createdAtTo)")
+     Page<User> findUsersByConditions(
+         @Param("email") String email,
+         @Param("userId") String userId,
+         @Param("nickname") String nickname,
+         @Param("createdAtFrom") LocalDateTime createdAtFrom,
+         @Param("createdAtTo") LocalDateTime createdAtTo,
+         Pageable pageable);
+}

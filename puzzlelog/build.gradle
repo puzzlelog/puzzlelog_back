@@ -17,6 +17,13 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
+tasks.withType(Test) {
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
@@ -41,7 +48,7 @@ dependencies {
     // Protocol Buffers
     implementation 'com.google.protobuf:protobuf-java:4.30.0-RC2' 
     // JWT
-	//implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 	// JWT (Json Web Token)
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
@@ -53,10 +60,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 	// DevTools (자동 빌드)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     // Test Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    // testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:2.3.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // PDFBox 추가 (버전 2.0.27)

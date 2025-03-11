@@ -1,0 +1,59 @@
+package com.puzzlelog.api.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    // 회원가입
+    @PostMapping
+    public ResponseEntity<?> signup() {
+        return ResponseEntity.ok().build();
+    }
+
+    // 로그인
+    @PostMapping("/login")
+    public ResponseEntity<?> login() {
+        return ResponseEntity.ok().build();
+    }
+
+    // 전체 사용자 정보 조회 (페이징)
+    @GetMapping
+    public ResponseEntity<?> getAllUsers() {
+        return ResponseEntity.ok().build();
+    }
+
+    // 특정 사용자 정보 조회
+    @GetMapping("/{identifier}")
+    public ResponseEntity<?> getUserById(@RequestParam(required = false) String email,
+    	    @RequestParam(required = false) String userId,
+    	    @RequestParam(required = false) String nickname) {
+        return ResponseEntity.ok().build();
+    }
+
+    // 특정 사용자 정보 수정
+    @PatchMapping("/{identifier}")
+    public ResponseEntity<?> updateUser(@PathVariable String identifier) {
+        return ResponseEntity.ok().build();
+    }
+
+    // 특정 사용자 삭제 (비활성화)
+    @DeleteMapping("/{identifier}")
+    public ResponseEntity<?> deactivateUser(@PathVariable String identifier) {
+        return ResponseEntity.ok().build();
+    }
+
+    // 아이디 중복 체크
+    @RequestMapping(value = "/check/user-id", method = RequestMethod.HEAD)
+    public ResponseEntity<?> checkUserId(@RequestParam String userId) {
+        return ResponseEntity.ok().build();
+    }
+
+    // 이메일 중복 체크
+    @RequestMapping(value = "/check/email", method = RequestMethod.HEAD)
+    public ResponseEntity<?> checkEmail(@RequestParam String email) {
+        return ResponseEntity.ok().build();
+    }
+}

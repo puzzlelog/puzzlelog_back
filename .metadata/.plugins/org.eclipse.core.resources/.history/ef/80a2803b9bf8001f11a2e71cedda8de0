@@ -1,6 +1,0 @@
-package com.puzzlelog.puzzlelog.model;
-
-public interface UserProjection {
-    String getId(); // �쐟 �궗�슜�옄 ID留� 媛��졇�샂
-}
-

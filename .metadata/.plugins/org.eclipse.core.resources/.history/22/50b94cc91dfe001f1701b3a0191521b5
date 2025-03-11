@@ -1,0 +1,8 @@
+package com.puzzlelog.api.entity.old;
+
+public enum FriendStatus {
+    PENDING,
+    ACCEPTED,
+    DEACTIVATED,
+    BLOCKED
+}

@@ -1,6 +1,0 @@
-package com.puzzlelog.puzzlelog.model;
-
-public interface UserProjection {
-    String getId(); // ✅ 사용자 ID만 가져옴
-}
-

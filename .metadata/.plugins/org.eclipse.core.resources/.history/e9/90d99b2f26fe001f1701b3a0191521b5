@@ -1,0 +1,5 @@
+package com.puzzlelog.api.service;
+
+public class AuthService {
+
+}

@@ -1,0 +1,20 @@
+//package com.puzzlelog.api.repository.old;
+//
+//
+//import java.time.LocalDateTime;
+//import java.util.List;
+//
+//import org.springframework.data.mongodb.repository.MongoRepository;
+//
+//import com.puzzlelog.api.document.old.NotificationDocument;
+//
+//
+//public interface OldNotificationRepository extends MongoRepository<NotificationDocument, String> {
+//    List<NotificationDocument> findBySentFalseAndSendTimeBefore(LocalDateTime now);
+//}
+//
+//
+//
+////GET /notifications/send API에서 발송할 알람을 조회하는 용도로 필요해.
+////이미 발송된 알람을 중복 발송하지 않도록 하기 위해 필요해.
+////sendTime이 지난 알람만 가져와야 하므로 필요해.

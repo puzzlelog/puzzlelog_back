@@ -1,0 +1,68 @@
+package com.puzzlelog.api.document.old;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "user_challenges")
+public class UserChallengeDocument {
+
+    @Id
+    private String id; // MongoDB ObjectId
+
+    private String userId; // 사용자 ID
+    private String challengeId; // 챌린지 ID 참조
+    private int progress; // 챌린지 진행 횟수
+    private boolean isCompleted; // 완료 여부
+    private LocalDate completedAt; // 완료된 날짜
+    private LocalDate lastUpdated; // 마지막 진행 날짜
+    private LocalDate lastCheckedPopup; // 팝업 마지막 확인 시간
+    private LocalDate lastPopupDismissed;  // 🔹 추가
+    
+    public UserChallengeDocument() {}
+
+    public UserChallengeDocument(String userId, String challengeId, int progress, boolean isCompleted) {
+        this.userId = userId;
+        this.challengeId = challengeId;
+        this.progress = progress;
+        this.isCompleted = isCompleted;
+        this.lastUpdated = LocalDate.now();
+    }
+
+    // Getter & Setter
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getChallengeId() { return challengeId; }
+    public void setChallengeId(String challengeId) { this.challengeId = challengeId; }
+
+    public int getProgress() { return progress; }
+    public void setProgress(int progress) { this.progress = progress; }
+
+    public boolean isCompleted() { return isCompleted; }
+    public void setCompleted(boolean completed) { isCompleted = completed; }
+
+    public LocalDate getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDate completedAt) { this.completedAt = completedAt; }
+
+    public LocalDate getLastUpdated() { return lastUpdated; }
+    public void setLastUpdated(LocalDate localDate) { this.lastUpdated = localDate; }
+
+    public LocalDate getLastCheckedPopup() { return lastCheckedPopup; }
+    public void setLastCheckedPopup(LocalDate lastCheckedPopup) { this.lastCheckedPopup = lastCheckedPopup; }
+    
+    
+    public LocalDate getLastPopupDismissed() {
+        return lastCheckedPopup;
+    }
+
+    public void setLastPopupDismissed(LocalDate lastCheckedPopup) {
+        this.lastCheckedPopup = lastCheckedPopup;
+    }
+    
+}

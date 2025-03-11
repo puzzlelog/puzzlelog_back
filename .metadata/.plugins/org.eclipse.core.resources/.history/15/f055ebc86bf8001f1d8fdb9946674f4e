@@ -1,6 +1,0 @@
-package com.puzzlelog.challenge.controller;
-
-public interface Command<T> {
-	
-	 T execute();
-}

@@ -1,0 +1,51 @@
+package com.puzzlelog.api.entity.old;
+
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "friend")
+public class FriendEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String userId;
+    private String friendId;
+
+    @Enumerated(EnumType.STRING) // Enum을 문자열로 저장
+    private FriendStatus status;
+
+    public FriendEntity() {}
+
+    public FriendEntity(String userId, String friendId, FriendStatus status) {
+        this.userId = userId;
+        this.friendId = friendId;
+        this.status = status;
+    }
+    
+    public Integer getId() {
+        return id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getFriendId() {
+        return friendId;
+    }
+
+    public FriendStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(FriendStatus status) {
+        this.status = status;
+    }
+}

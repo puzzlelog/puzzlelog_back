@@ -1,0 +1,15 @@
+//package com.puzzlelog.api.repository.old;
+//
+//import java.time.Instant;
+//import java.util.List;
+//
+//import org.springframework.data.mongodb.repository.MongoRepository;
+//
+//import com.puzzlelog.api.document.old.EmotionDocument;
+//
+//public interface OldEmotionRepository extends MongoRepository<EmotionDocument, String> {
+//
+//	List<EmotionDocument> findByUserId(String userId);
+//	EmotionDocument findByUserIdAndDate(String userId, Instant date);
+//	List<EmotionDocument> findByUserIdAndDateBetween(String userId, Instant startDate, Instant endDate);
+//}
