@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,6 +42,17 @@ public class UserController {
     // 회원가입
     @PostMapping
     public ResponseEntity<ApiResponse<SignupResponse>> signup(@RequestBody SignupRequest request) {
+
+        if (request.getUserId() == null || request.getUserId().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.fail("아이디는 필수 입력값입니다."));
+        }
+
+        if (request.getEmail() == null || request.getEmail().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.fail("이메일은 필수 입력값입니다."));
+        }
+
         if (authService.existsByUserId(request.getUserId())) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.fail("이미 존재하는 아이디입니다."));

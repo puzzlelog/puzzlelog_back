@@ -37,20 +37,19 @@ public class AuthService { // 인증 기능
     // 회원가입 로직
     @Transactional
     public SignupResponse registerUser(SignupRequest request) {
-        User savedUser = userRepository.save(User.builder()
+        User user = User.builder()
                 .userId(request.getUserId())
                 .userPwd(passwordEncoder.encode(request.getUserPwd()))
                 .email(request.getEmail())
-                .birthDate(request.getBirthDate() != null ?
-                        LocalDate.parse(request.getBirthDate()) : null)
-                .gender(request.getGender() != null ?
-                        User.Gender.valueOf(request.getGender()) : null)
-                .build());
+                .birthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null)
+                .gender(request.getGender() != null ? User.Gender.valueOf(request.getGender()) : null)
+                .build();
+
+        User savedUser = userRepository.save(user);
 
         return SignupResponse.builder()
                 .id(savedUser.getId())
                 .userId(savedUser.getUserId())
-                .email(savedUser.getEmail())
                 .build();
     }
 
