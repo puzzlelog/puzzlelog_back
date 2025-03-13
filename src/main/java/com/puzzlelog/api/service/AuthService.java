@@ -43,6 +43,7 @@ public class AuthService { // 인증 기능
                 .email(request.getEmail())
                 .birthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null)
                 .gender(request.getGender() != null ? User.Gender.valueOf(request.getGender()) : null)
+                .profileImg(request.getProfileImg())
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -50,6 +51,8 @@ public class AuthService { // 인증 기능
         return SignupResponse.builder()
                 .id(savedUser.getId())
                 .userId(savedUser.getUserId())
+                .email(savedUser.getEmail())
+                .profileImg(savedUser.getProfileImg())
                 .build();
     }
 

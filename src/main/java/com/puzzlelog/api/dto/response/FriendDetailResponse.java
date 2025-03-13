@@ -13,14 +13,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FriendInfo {
+public class FriendDetailResponse {
     private int userId;
     private int friendId;
     private String nickname;  // 친구의 닉네임 (USER 엔티티 참조)
     private String updatedAt; // 상태 변경일시 (Friend 참조)
 
-    public static FriendInfo from(Friend friend) {
-        return FriendInfo.builder()
+    public static FriendDetailResponse from(Friend friend) {
+        return FriendDetailResponse.builder()
                 .userId(friend.getUser().getId())
                 .friendId(friend.getFriend().getId())
                 .nickname(friend.getFriend().getNickname())

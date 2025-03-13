@@ -2,15 +2,16 @@ package com.puzzlelog.api.service;
 
 import java.util.List;
 
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.puzzlelog.api.dao.entity.Friend;
 import com.puzzlelog.api.dao.entity.User;
+import com.puzzlelog.api.dto.response.FriendDetailResponse;
 import com.puzzlelog.api.dto.response.FriendResponse;
 import com.puzzlelog.api.dto.response.PagedFriendResponse;
 import com.puzzlelog.api.repository.mysql.FriendRepository;
@@ -142,7 +143,10 @@ public class FriendService {
                 throw new IllegalArgumentException("지원하지 않는 조회 타입입니다: " + type);
         }
 
-        return PagedFriendResponse.from(friends);
+        // Entity → DTO 변환 후 페이징 처리
+        Page<FriendDetailResponse> friendDetails = friends.map(FriendDetailResponse::from);
+
+        return PagedFriendResponse.from(friendDetails);
     }
     
     // 친구 차단
