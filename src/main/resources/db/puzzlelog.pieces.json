@@ -1,0 +1,116 @@
+[{
+  "_id": {
+    "$oid": "67d24640b22ac7211c68dd8c"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "오늘은 선택적 값을 제외한 조각만 보냈습니다.",
+  "isPrivate": false,
+  "createdAt": {
+    "$date": "2025-03-13T02:43:12.413Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.PieceDocument"
+},
+{
+  "_id": {
+    "$oid": "67d2469cb22ac7211c68dd8d"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "모든 값이 포함된 조각입니다!",
+  "location": {
+    "type": "Point",
+    "coordinates": [
+      127.0276,
+      37.4979
+    ]
+  },
+  "mediaId": "65e123456789abcdef123456",
+  "isPrivate": true,
+  "createdAt": {
+    "$date": "2025-03-13T02:44:44.345Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.PieceDocument"
+},
+{
+  "_id": {
+    "$oid": "67d2704fb22ac7211c68dd95"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "모든 값이 포함된 조각입니다!",
+  "location": {
+    "type": "Point",
+    "coordinates": [
+      127.0276,
+      37.4979
+    ]
+  },
+  "isPrivate": true,
+  "createdAt": {
+    "$date": "2025-03-13T05:42:39.641Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.PieceDocument"
+},
+{
+  "_id": {
+    "$oid": "67d29d66b22ac7211c68ddd3"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "오늘은 선택적 값을 제외한 조각만 보냈습니다.",
+  "isPrivate": false,
+  "createdAt": {
+    "$date": "2025-03-13T08:55:02.131Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.Piece"
+},
+{
+  "_id": {
+    "$oid": "67d29daab22ac7211c68ddd4"
+  },
+  "userId": 1,
+  "type": "AUDIO",
+  "tags": [
+    "수정",
+    "테스트"
+  ],
+  "isPrivate": false,
+  "createdAt": {
+    "$date": "2025-03-13T08:56:10.881Z"
+  },
+  "isDeleted": true,
+  "_class": "com.puzzlelog.api.dao.document.Piece"
+},
+{
+  "_id": {
+    "$oid": "67d29edfb22ac7211c68ddd7"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "오늘은 선택적 값을 제외한 조각만 보냈습니다.",
+  "isPrivate": false,
+  "createdAt": {
+    "$date": "2025-03-13T09:01:19.806Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.Piece"
+},
+{
+  "_id": {
+    "$oid": "67d29f3bb22ac7211c68ddd9"
+  },
+  "userId": 1,
+  "type": "TEXT",
+  "content": "오늘은 선택적 값을 제외한 조각만 보냈습니다.",
+  "isPrivate": false,
+  "createdAt": {
+    "$date": "2025-03-13T09:02:51.548Z"
+  },
+  "isDeleted": false,
+  "_class": "com.puzzlelog.api.dao.document.Piece"
+}]

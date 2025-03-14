@@ -16,13 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.puzzlelog.api.dao.document.Piece;
-import com.puzzlelog.api.dto.request.PieceRequest;
-import com.puzzlelog.api.dto.request.PieceSearchRequest;
-import com.puzzlelog.api.dto.request.PieceUpdateRequest;
-import com.puzzlelog.api.dto.response.PagedPieceResponse;
-import com.puzzlelog.api.dto.response.PieceDeleteResponse;
-import com.puzzlelog.api.dto.response.PieceResponse;
-import com.puzzlelog.api.dto.response.PieceUpdateResponse;
+import com.puzzlelog.api.dto.request.piece.PieceRequest;
+import com.puzzlelog.api.dto.request.piece.PieceSearchRequest;
+import com.puzzlelog.api.dto.request.piece.PieceUpdateRequest;
+import com.puzzlelog.api.dto.response.piece.PagedPieceResponse;
+import com.puzzlelog.api.dto.response.piece.PieceDeleteResponse;
+import com.puzzlelog.api.dto.response.piece.PieceResponse;
+import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
 import com.puzzlelog.api.repository.mongo.PieceRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 

@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response;
+package com.puzzlelog.api.dto.response.user;
 
 import com.puzzlelog.api.dao.entity.User;
 import lombok.*;

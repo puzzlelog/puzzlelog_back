@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response;
+package com.puzzlelog.api.dto.response.user;
 
 import java.util.Map;
 

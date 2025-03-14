@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.config.ApiResponse;
-import com.puzzlelog.api.dto.response.FriendResponse;
-import com.puzzlelog.api.dto.response.PagedFriendResponse;
+import com.puzzlelog.api.dto.response.friend.FriendResponse;
+import com.puzzlelog.api.dto.response.friend.PagedFriendResponse;
 import com.puzzlelog.api.service.FriendService;
 
 @RestController

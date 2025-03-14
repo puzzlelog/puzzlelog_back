@@ -1,23 +1,25 @@
-package com.puzzlelog.api.dto.response;
+package com.puzzlelog.api.dto.response.friend;
 
 import java.util.List;
-
 import org.springframework.data.domain.Page;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PagedUserResponse {
-    private List<UserResponse> users;
+public class PagedFriendResponse {
+    private List<FriendDetailResponse> friends;
     private Pagination pagination;
+
+    public static PagedFriendResponse from(Page<FriendDetailResponse> page) {
+        return PagedFriendResponse.builder()
+            .friends(page.getContent())
+            .pagination(Pagination.from(page))
+            .build();
+    }
 
     @Getter
     @Setter
@@ -42,12 +44,5 @@ public class PagedUserResponse {
                     .isLast(page.isLast())
                     .build();
         }
-    }
-
-    public static PagedUserResponse from(Page<UserResponse> page) {
-        return PagedUserResponse.builder()
-                .users(page.getContent())
-                .pagination(Pagination.from(page))
-                .build();
     }
 }

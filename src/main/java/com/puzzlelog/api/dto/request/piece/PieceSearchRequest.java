@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.request;
+package com.puzzlelog.api.dto.request.piece;
 
 import java.time.LocalDate;
 import java.util.List;

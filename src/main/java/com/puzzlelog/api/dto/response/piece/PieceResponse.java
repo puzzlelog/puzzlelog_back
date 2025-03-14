@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response;
+package com.puzzlelog.api.dto.response.piece;
 
 import java.time.Instant;
 import java.util.List;

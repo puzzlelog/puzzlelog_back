@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.request;
+package com.puzzlelog.api.dto.request.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

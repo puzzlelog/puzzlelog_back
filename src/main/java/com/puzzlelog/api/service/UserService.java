@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.puzzlelog.api.dao.entity.User;
-import com.puzzlelog.api.dto.request.UserSearchRequest;
-import com.puzzlelog.api.dto.request.UserUpdateRequest;
-import com.puzzlelog.api.dto.response.UserResponse;
-import com.puzzlelog.api.dto.response.UserUpdateResponse;
+import com.puzzlelog.api.dto.request.user.UserSearchRequest;
+import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
+import com.puzzlelog.api.dto.response.user.UserResponse;
+import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
 @Service

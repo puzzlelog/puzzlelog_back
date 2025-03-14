@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.puzzlelog.api.dao.entity.User;
-import com.puzzlelog.api.dto.request.UserSearchRequest;
+import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
     

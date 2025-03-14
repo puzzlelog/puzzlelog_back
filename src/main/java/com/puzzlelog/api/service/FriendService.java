@@ -11,9 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.puzzlelog.api.dao.entity.Friend;
 import com.puzzlelog.api.dao.entity.User;
-import com.puzzlelog.api.dto.response.FriendDetailResponse;
-import com.puzzlelog.api.dto.response.FriendResponse;
-import com.puzzlelog.api.dto.response.PagedFriendResponse;
+import com.puzzlelog.api.dto.response.friend.FriendDetailResponse;
+import com.puzzlelog.api.dto.response.friend.FriendResponse;
+import com.puzzlelog.api.dto.response.friend.PagedFriendResponse;
 import com.puzzlelog.api.repository.mysql.FriendRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 

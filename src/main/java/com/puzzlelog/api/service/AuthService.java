@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.puzzlelog.api.dao.entity.User;
-import com.puzzlelog.api.dto.request.LoginRequest;
-import com.puzzlelog.api.dto.request.SignupRequest;
-import com.puzzlelog.api.dto.response.LoginResponse;
-import com.puzzlelog.api.dto.response.SignupResponse;
+import com.puzzlelog.api.dto.request.auth.LoginRequest;
+import com.puzzlelog.api.dto.request.auth.SignupRequest;
+import com.puzzlelog.api.dto.response.auth.LoginResponse;
+import com.puzzlelog.api.dto.response.auth.SignupResponse;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
 @Service

@@ -14,15 +14,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.config.ApiResponse;
-import com.puzzlelog.api.dto.request.LoginRequest;
-import com.puzzlelog.api.dto.request.SignupRequest;
-import com.puzzlelog.api.dto.request.UserSearchRequest;
-import com.puzzlelog.api.dto.request.UserUpdateRequest;
-import com.puzzlelog.api.dto.response.LoginResponse;
-import com.puzzlelog.api.dto.response.PagedUserResponse;
-import com.puzzlelog.api.dto.response.SignupResponse;
-import com.puzzlelog.api.dto.response.UserResponse;
-import com.puzzlelog.api.dto.response.UserUpdateResponse;
+import com.puzzlelog.api.dto.request.auth.LoginRequest;
+import com.puzzlelog.api.dto.request.auth.SignupRequest;
+import com.puzzlelog.api.dto.request.user.UserSearchRequest;
+import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
+import com.puzzlelog.api.dto.response.auth.LoginResponse;
+import com.puzzlelog.api.dto.response.auth.SignupResponse;
+import com.puzzlelog.api.dto.response.user.PagedUserResponse;
+import com.puzzlelog.api.dto.response.user.UserResponse;
+import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
 import com.puzzlelog.api.service.AuthService;
 import com.puzzlelog.api.service.UserService;
 
