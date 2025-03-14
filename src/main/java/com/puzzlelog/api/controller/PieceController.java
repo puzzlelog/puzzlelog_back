@@ -1,7 +1,9 @@
 package com.puzzlelog.api.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.request.PieceRequest;
+import com.puzzlelog.api.dto.request.PieceUpdateRequest;
 import com.puzzlelog.api.dto.response.PagedPieceResponse;
+import com.puzzlelog.api.dto.response.PieceDeleteResponse;
 import com.puzzlelog.api.dto.response.PieceResponse;
 import com.puzzlelog.api.service.PieceService;
 
@@ -50,20 +54,20 @@ public class PieceController {
 	    return ResponseEntity.ok(ApiResponse.success(response, "조각의 목록을 조회하는데 성공했습니다."));
 	}
 
-//	// 조각 수정
-//	@PatchMapping("/{pieceId}")
-//	public ResponseEntity<ApiResponse<PieceResponse>> updatePiece(
-//	        @PathVariable String pieceId,
-//	        @RequestBody PieceRequest request) {
-//
-//	    PieceResponse response = pieceService.updatePiece(pieceId, request);
-//	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
-//	}
-//
-//	// 조각 삭제 (비활성화 처리)
-//	@DeleteMapping("/{pieceId}")
-//	public ResponseEntity<ApiResponse<Void>> deletePiece(@PathVariable String pieceId) {
-//	    pieceService.deletePiece(pieceId);
-//	    return ResponseEntity.ok(ApiResponse.successMessage("조각 삭제 성공"));
-//	}
+	// 조각 수정
+	@PatchMapping("/{pieceId}")
+	public ResponseEntity<ApiResponse<PieceResponse>> updatePiece(
+	        @PathVariable String pieceId,
+	        @RequestBody PieceUpdateRequest request) {
+
+		PieceResponse response = pieceService.updatePiece(pieceId, request);
+	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
+	}
+
+	// 조각 삭제 (비활성화 처리)
+	@DeleteMapping("/{pieceId}")
+	public ResponseEntity<ApiResponse<PieceDeleteResponse>> deletePiece(@PathVariable String pieceId) {
+	    PieceDeleteResponse response = pieceService.deletePiece(pieceId);
+	    return ResponseEntity.ok(ApiResponse.success(response, "조각 삭제 성공"));
+	}
 }

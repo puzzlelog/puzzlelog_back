@@ -1,5 +1,7 @@
 package com.puzzlelog.api.dto.request;
 
+import java.util.List;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -28,6 +30,8 @@ public class PieceRequest {
 
     @NotBlank(message = "내용을 입력해주세요.")
     private String content;  // Type이 TEXT일 때 필수
+    
+    private List<String> tags; // 태그 선택적
 
     // 위치정보는 선택적
     private GeoJsonPoint location;

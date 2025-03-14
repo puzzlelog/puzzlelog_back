@@ -1,10 +1,17 @@
 package com.puzzlelog.api.dto.response;
 
-import com.puzzlelog.api.dao.document.Piece;
+import java.time.Instant;
+import java.util.List;
+
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
-import lombok.*;
-import java.time.Instant;
+import com.puzzlelog.api.dao.document.Piece;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -16,6 +23,7 @@ public class PieceResponse {
     private Integer userId;
     private String type;
     private String content;
+    private List<String> tags;
     private GeoJsonPoint location;
     private String mediaId;
     private Boolean isPrivate;
@@ -27,6 +35,7 @@ public class PieceResponse {
                 .userId(piece.getUserId())
                 .type(piece.getType().name())
                 .content(piece.getContent())
+                .tags(piece.getTags())
                 .location(piece.getLocation())
                 .mediaId(piece.getMediaId())
                 .isPrivate(piece.getIsPrivate())
