@@ -61,6 +61,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 	// DevTools (자동 빌드)
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
     // Test Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

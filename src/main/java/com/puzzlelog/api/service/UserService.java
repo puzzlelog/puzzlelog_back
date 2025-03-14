@@ -52,42 +52,42 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        Map<String, Object> updatedFields = new HashMap<>();
+        Map<String, UserUpdateResponse.UpdateField> updatedFields = new HashMap<>();
 
         if (request.getUserPwd() != null) {
             user.setUserPwd(passwordEncoder.encode(request.getUserPwd()));
-            updatedFields.put("userPwd", "(비밀번호 변경됨)");
+            updatedFields.put("userPwd", new UserUpdateResponse.UpdateField("(비밀번호 변경됨)", "(비밀번호 변경됨)"));
         }
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
+            updatedFields.put("nickname", new UserUpdateResponse.UpdateField(user.getNickname(), request.getNickname()));
             user.setNickname(request.getNickname());
-            updatedFields.put("nickname", request.getNickname());
         }
         if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate().toString())) {
+            updatedFields.put("birthDate", new UserUpdateResponse.UpdateField(user.getBirthDate().toString(), request.getBirthDate()));
             user.setBirthDate(LocalDate.parse(request.getBirthDate()));
-            updatedFields.put("birthDate", request.getBirthDate());
         }
         if (request.getGender() != null && !request.getGender().equals(user.getGender().name())) {
+            updatedFields.put("gender", new UserUpdateResponse.UpdateField(user.getGender().name(), request.getGender()));
             user.setGender(User.Gender.valueOf(request.getGender()));
-            updatedFields.put("gender", request.getGender());
         }
         if (request.getIsAlarm() != null && !request.getIsAlarm().equals(user.getIsAlarm())) {
+            updatedFields.put("isAlarm", new UserUpdateResponse.UpdateField(user.getIsAlarm(), request.getIsAlarm()));
             user.setIsAlarm(request.getIsAlarm());
-            updatedFields.put("isAlarm", request.getIsAlarm());
         }
         if (request.getProfileImg() != null && !request.getProfileImg().equals(user.getProfileImg())) {
+            updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(user.getProfileImg(), request.getProfileImg()));
             user.setProfileImg(request.getProfileImg());
-            updatedFields.put("profileImg", request.getProfileImg());
         }
 
         // 관리자 전용 필드
         if (request.getStatus() != null && !request.getStatus().equals(user.getStatus().name())
             && !request.getStatus().equals(User.Status.DELETED.name())) {
+            updatedFields.put("status", new UserUpdateResponse.UpdateField(user.getStatus().name(), request.getStatus()));
             user.setStatus(User.Status.valueOf(request.getStatus()));
-            updatedFields.put("status", request.getStatus());
         }
         if (request.getRole() != null && !request.getRole().equals(user.getRole().name())) {
+            updatedFields.put("role", new UserUpdateResponse.UpdateField(user.getRole().name(), request.getRole()));
             user.setRole(User.Role.valueOf(request.getRole()));
-            updatedFields.put("role", request.getRole());
         }
 
         userRepository.save(user);

@@ -1,17 +1,18 @@
 package com.puzzlelog.api.dto.response;
 
-import java.util.Map;
-
 import lombok.*;
+
+import java.util.Map;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserUpdateResponse {
-    private String userId;
-    private Map<String, UpdateField> updatedFields;
+public class PieceUpdateResponse {
+    private String id;          // 조각 ID
+    private Integer userId;     // 사용자 ID
+    private Map<String, UpdateField> updatedFields;  // 수정된 필드 정보
 
     @Getter
     @Setter
