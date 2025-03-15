@@ -16,7 +16,7 @@ import com.puzzlelog.api.dto.response.friend.PagedFriendResponse;
 import com.puzzlelog.api.service.FriendService;
 
 @RestController
-@RequestMapping("/api/friends")
+@RequestMapping("/friends")
 public class FriendController {
     
     private final FriendService friendService;

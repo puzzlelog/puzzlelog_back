@@ -11,7 +11,7 @@ import com.puzzlelog.api.dto.request.diary.DiaryRequest;
 import com.puzzlelog.api.dto.response.diary.DiaryResponse;
 
 @RestController
-@RequestMapping("/api/diaries")
+@RequestMapping("/diaries")
 public class DiaryController {
 
     // 일기 생성

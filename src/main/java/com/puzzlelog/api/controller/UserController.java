@@ -27,7 +27,7 @@ import com.puzzlelog.api.service.AuthService;
 import com.puzzlelog.api.service.UserService;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 public class UserController {
 	
 	private final AuthService authService;

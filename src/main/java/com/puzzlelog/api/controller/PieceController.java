@@ -24,7 +24,7 @@ import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
 import com.puzzlelog.api.service.PieceService;
 
 @RestController
-@RequestMapping("/api/pieces")
+@RequestMapping("/pieces")
 public class PieceController {
 
 	private final PieceService pieceService;

@@ -1,5 +1,0 @@
-package com.puzzlelog.api.config;
-
-public class SecurityConfig {
-
-}
