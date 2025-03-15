@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  puzzlelog-app:
+    build: .
+    container_name: puzzlelog-app
+    restart: always
+    ports:
+      - "80:8080"  # 외부 80 포트 -> 컨테이너 내부 8080 포트
+    env_file:
+      - .env
