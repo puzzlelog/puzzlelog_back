@@ -7,6 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -14,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.Piece;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
@@ -29,18 +33,23 @@ import com.puzzlelog.api.repository.mysql.UserRepository;
 @Service
 public class PieceService {
 
+	private static final Logger logger = LoggerFactory.getLogger(PieceService.class);
+	
     private final PieceRepository pieceRepository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
+    private final CloudinaryService cloudinaryService;
 
-    public PieceService(PieceRepository pieceRepository, UserRepository userRepository, MongoTemplate mongoTemplate) {
+    public PieceService(PieceRepository pieceRepository, UserRepository userRepository, 
+    		MongoTemplate mongoTemplate, CloudinaryService cloudinaryService) {
         this.pieceRepository = pieceRepository;
         this.userRepository = userRepository;
         this.mongoTemplate = mongoTemplate;
+        this.cloudinaryService = cloudinaryService;
     }
 
     // 조각 추가 메서드
-    public PieceResponse addPiece(PieceRequest request) {
+    public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
         if (request.getUserId() == null) {
             throw new RuntimeException("사용자 ID는 필수입니다.");
         }
@@ -54,6 +63,22 @@ public class PieceService {
             throw new RuntimeException("존재하지 않는 사용자입니다.");
         }
 
+        if (request.getType() != Piece.Type.TEXT && file == null) {
+            throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
+        }
+
+        String mediaId = null;
+        if (file != null) {
+            try {
+                logger.info("파일 업로드 시작: {} ({} bytes)", file.getOriginalFilename(), file.getSize());
+                mediaId = cloudinaryService.uploadToCloud(file);
+                logger.info("Cloudinary 업로드 성공: {}", mediaId);
+            } catch (Exception e) {
+                logger.error("Cloudinary 업로드 실패: {}", e.getMessage(), e);
+                throw new RuntimeException("파일 업로드 실패: " + e.getMessage());
+            }
+        }
+
         Piece piece = Piece.builder()
                 .userId(request.getUserId())
                 .type(request.getType())
@@ -61,11 +86,11 @@ public class PieceService {
                 .tags(request.getTags())
                 .location(request.getLocation())
                 .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false)
+                .mediaId(mediaId)
                 .createdAt(Instant.now())
                 .build();
 
         Piece savedPiece = pieceRepository.save(piece);
-
         return PieceResponse.from(savedPiece);
     }
     

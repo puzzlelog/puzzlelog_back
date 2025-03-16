@@ -2,10 +2,10 @@ package com.puzzlelog.api.dto.request.piece;
 
 import java.util.List;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.Piece.Type;
 
@@ -28,7 +28,6 @@ public class PieceRequest {
     @NotNull(message = "타입은 필수입니다.")
     private Type type;
 
-    @NotBlank(message = "내용을 입력해주세요.")
     private String content;  // Type이 TEXT일 때 필수
     
     private List<String> tags; // 태그 선택적
@@ -39,4 +38,7 @@ public class PieceRequest {
     // 기본값이 있으므로 명시적으로 입력하지 않아도 된다.
     @Builder.Default
     private Boolean isPrivate = false;
+    
+    // TEXT가 아닌 경우 파일을 업로드해야 함
+    private MultipartFile mediaFile;
 }

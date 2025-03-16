@@ -1,6 +1,7 @@
 package com.puzzlelog.api.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,9 +10,13 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
@@ -28,17 +33,45 @@ import com.puzzlelog.api.service.PieceService;
 public class PieceController {
 
 	private final PieceService pieceService;
+	private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
     public PieceController(PieceService pieceService) {
         this.pieceService = pieceService;
     }
 	
+    // 조각 파일 크기 체크
+    @RequestMapping(method = RequestMethod.HEAD)
+    public ResponseEntity<Void> checkFileSize(
+            @RequestHeader(value = "Content-Length", required = false) Long fileSize,
+            @RequestHeader(value = "Content-Type", required = false) String fileType) {
+
+        System.out.println("🔍 Content-Length: " + fileSize + " bytes");
+        System.out.println("🔍 Content-Type: " + fileType);
+
+        if (fileSize == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .build(); // Content-Length가 없는 경우 400 Bad Request 반환
+        }
+
+        if (fileSize > MAX_FILE_SIZE) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
+    
 	// 조각 생성
-	@PostMapping
-	public ResponseEntity<ApiResponse<PieceResponse>> createPiece(@RequestBody PieceRequest request) {
-	    PieceResponse response = pieceService.addPiece(request);
-	    return ResponseEntity.ok(ApiResponse.success(response, "조각이 생성되었습니다."));
-	}
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<ApiResponse<PieceResponse>> createPiece(
+            @RequestPart(value = "data", required = true) PieceRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        System.out.println("✅ JSON 데이터: " + request);
+        System.out.println("✅ 파일: " + (file != null ? file.getOriginalFilename() : "파일 없음"));
+
+        PieceResponse response = pieceService.addPiece(request, file);
+        return ResponseEntity.ok(ApiResponse.success(response, "조각이 생성되었습니다."));
+    }
 
 	// 조각 단일 조회
 	@GetMapping("/{pieceId}")
