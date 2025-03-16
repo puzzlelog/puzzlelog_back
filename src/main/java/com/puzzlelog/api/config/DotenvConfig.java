@@ -7,30 +7,33 @@ import org.springframework.context.annotation.Configuration;
 public class DotenvConfig {
 
     static {
-        // ✅ 현재 프로젝트 루트에서 `.env` 파일 로드
-        String projectRoot = System.getProperty("user.dir"); // 현재 실행 중인 프로젝트의 루트 디렉토리
+        // ✅ `SPRING_PROFILES_ACTIVE` 환경 변수 가져오기
+        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
+        if (activeProfile == null) {
+            activeProfile = System.getProperty("SPRING_PROFILES_ACTIVE", "local"); // 기본값은 "local"
+        }
 
-        if (System.getProperty("SPRING_PROFILES_ACTIVE") == null &&
-            System.getenv("SPRING_PROFILES_ACTIVE") == null) {
-
+        // ✅ EC2 (prod) 환경에서는 `.env`를 로드하지 않음
+        if ("prod".equals(activeProfile)) {
+            System.out.println("⚠️ [Dotenv] EC2(prod) 환경 - .env 로딩 생략, 환경 변수 직접 사용");
+        } else {
+            // ✅ 로컬(local) 환경에서는 `.env` 파일에서 값 로드
+            String projectRoot = System.getProperty("user.dir"); // 현재 프로젝트 루트 디렉토리
             Dotenv dotenv = Dotenv.configure()
-                    .directory(projectRoot) // 프로젝트 루트에서 `.env` 로드
+                    .directory(projectRoot)
                     .ignoreIfMissing()
                     .load();
 
             dotenv.entries().forEach(entry -> {
-                System.setProperty(entry.getKey(), entry.getValue()); // 환경 변수 설정
+                System.setProperty(entry.getKey(), entry.getValue());
             });
 
             System.out.println("✅ [Dotenv] Loaded .env file from: " + projectRoot);
-        } else {
-            System.out.println("⚠️ [Dotenv] Skipping .env loading - SPRING_PROFILES_ACTIVE already set.");
         }
 
-        // ✅ 환경 변수 확인 로그 (MySQL 연결 정보)
-        System.out.println("✅ SPRING_PROFILES_ACTIVE = " + System.getProperty("SPRING_PROFILES_ACTIVE"));
-        System.out.println("✅ SPRING_DATASOURCE_URL = " + System.getProperty("SPRING_DATASOURCE_URL"));
-        System.out.println("✅ SPRING_DATASOURCE_USERNAME = " + System.getProperty("SPRING_DATASOURCE_USERNAME"));
-        System.out.println("✅ SPRING_DATASOURCE_PASSWORD = " + System.getProperty("SPRING_DATASOURCE_PASSWORD"));
+        // ✅ 환경 변수 확인 로그 (EC2 및 로컬 환경 모두 출력)
+        System.out.println("✅ SPRING_PROFILES_ACTIVE = " + activeProfile);
+        System.out.println("✅ SPRING_DATASOURCE_URL = " + System.getenv("SPRING_DATASOURCE_URL"));
+        System.out.println("✅ SPRING_DATASOURCE_USERNAME = " + System.getenv("SPRING_DATASOURCE_USERNAME"));
     }
 }
