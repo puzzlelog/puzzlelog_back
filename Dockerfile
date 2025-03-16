@@ -5,7 +5,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /puzzlelog_back
 
 # .env 파일 복사 (환경 변수 설정)
-COPY .env /puzzlelog_back/.env
+COPY /puzzlelog_back/.env .env
 
 # JAR 파일 복사
 ARG JAR_FILE=build/libs/puzzlelog-0.0.1-SNAPSHOT.jar
