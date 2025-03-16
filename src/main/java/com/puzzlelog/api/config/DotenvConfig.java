@@ -15,17 +15,17 @@ public class DotenvConfig {
         String activeProfile = dotenv.get("SPRING_PROFILES_ACTIVE", System.getenv("SPRING_PROFILES_ACTIVE"));
 
         if (activeProfile == null || activeProfile.isEmpty()) {
-            activeProfile = System.getProperty("SPRING_PROFILES_ACTIVE", "local"); // 기본값: local
+            activeProfile = System.getProperty("SPRING_PROFILES_ACTIVE", "prod"); // 기본값을 "prod"로 설정
         }
 
-        // ✅ 환경 변수 설정 (Docker 및 로컬 환경 공통)
+        // ✅ 환경 변수를 명확하게 설정
         System.setProperty("SPRING_PROFILES_ACTIVE", activeProfile);
-        dotenv.entries().forEach(entry -> {
-            System.setProperty(entry.getKey(), entry.getValue());
-        });
+        System.setProperty("SPRING_DATASOURCE_URL", dotenv.get("SPRING_DATASOURCE_URL", System.getenv("SPRING_DATASOURCE_URL")));
+        System.setProperty("SPRING_DATASOURCE_USERNAME", dotenv.get("SPRING_DATASOURCE_USERNAME", System.getenv("SPRING_DATASOURCE_USERNAME")));
+        System.setProperty("SPRING_DATASOURCE_PASSWORD", dotenv.get("SPRING_DATASOURCE_PASSWORD", System.getenv("SPRING_DATASOURCE_PASSWORD")));
 
         // ✅ 환경 변수 출력 (디버깅용)
-        System.out.println("✅ [DotenvConfig] SPRING_PROFILES_ACTIVE = " + activeProfile);
+        System.out.println("✅ [DotenvConfig] SPRING_PROFILES_ACTIVE = " + System.getProperty("SPRING_PROFILES_ACTIVE"));
         System.out.println("✅ [DotenvConfig] SPRING_DATASOURCE_URL = " + System.getProperty("SPRING_DATASOURCE_URL"));
         System.out.println("✅ [DotenvConfig] SPRING_DATASOURCE_USERNAME = " + System.getProperty("SPRING_DATASOURCE_USERNAME"));
     }
