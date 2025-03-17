@@ -42,18 +42,17 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // CORS 설정
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-//        configuration.setAllowedOrigins(Arrays.asList(
-//            "http://localhost:3000",
-//            "http://puzzlelog.me",
-//            "https://puzzlelog.me"
-//        ));
-        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // ⭐ 모든 Origin 허용
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"));
+        
+        // 🔑 Credentials를 사용한다면 모든 Origin (*)을 허용하면 안 됨.
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://puzzlelog.me",
+            "https://puzzlelog.me"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
