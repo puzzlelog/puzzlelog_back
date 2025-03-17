@@ -27,7 +27,7 @@ public class SecurityConfig {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**", "/images/**");
+        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**", "/images/**", "/**/*.ico", "/**/*.png");
     }
 
     @Bean
@@ -42,6 +42,9 @@ public class SecurityConfig {
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .antMatchers("/**").permitAll()
                 .anyRequest().authenticated();
+        
+        	// Spring Security가 OPTIONS 요청을 직접 차단하지 않게 명확히 추가
+        	http.headers().frameOptions().sameOrigin();
 
         return http.build();
     }
