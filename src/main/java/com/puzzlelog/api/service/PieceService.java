@@ -1,5 +1,6 @@
 package com.puzzlelog.api.service;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -9,7 +10,6 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -167,44 +167,95 @@ public class PieceService {
     
     // 조각 변경
     @Transactional
-    public PieceUpdateResponse updatePiece(String pieceId, PieceUpdateRequest request) {
+    public PieceUpdateResponse updatePiece(String pieceId, PieceUpdateRequest request, MultipartFile file) {
         Piece piece = pieceRepository.findById(pieceId)
             .orElseThrow(() -> new RuntimeException("조각을 찾을 수 없습니다."));
 
         Map<String, PieceUpdateResponse.UpdateField> updatedFields = new LinkedHashMap<>();
 
+        // 타입 변경 체크
         if (request.getType() != null && request.getType() != piece.getType()) {
             updatedFields.put("type", new PieceUpdateResponse.UpdateField(piece.getType().name(), request.getType().name()));
 
+            // 타입이 TEXT로 변경될 경우
             if (request.getType() == Piece.Type.TEXT) {
                 if (request.getContent() == null || request.getContent().trim().isEmpty()) {
                     throw new RuntimeException("TEXT 타입으로 변경 시 내용은 필수입니다.");
                 }
 
-                // 기존 mediaId가 있으면 삭제 반영
+                // 기존 업로드 파일 삭제
                 if (piece.getMediaId() != null) {
+                    try {
+                        cloudinaryService.deleteFromCloud(piece.getMediaId());
+                    } catch (Exception e) {
+                        logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
+                        throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
+                    }
                     updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), null));
                     piece.setMediaId(null);
                 }
 
-                // content 필드 추가
+                // content 업데이트
                 updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
                 piece.setContent(request.getContent());
 
-            } else {  // IMAGE, VIDEO, AUDIO 타입으로 변경할 때는 항상 mediaId 반영
-                // 기존 content가 있으면 삭제 반영
-                if (piece.getContent() != null) {
-                    piece.setContent(null);
+            } else { // 타입이 TEXT → IMAGE, VIDEO, AUDIO로 변경될 경우
+                if (file == null) {
+                    throw new RuntimeException("파일이 필수입니다.");
                 }
 
-                updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), request.getMediaId()));
-                piece.setMediaId(request.getMediaId());
+                // 파일 업로드
+                String newMediaId;
+                try {
+                    newMediaId = cloudinaryService.uploadToCloud(file);
+                } catch (IOException e) {
+                    logger.error("Cloudinary 파일 업로드 실패: {}", e.getMessage(), e);
+                    throw new RuntimeException("파일 업로드 실패: " + e.getMessage(), e);
+                }
+                updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
+
+                // 기존 업로드 파일 삭제
+                if (piece.getMediaId() != null) {
+                    try {
+                        cloudinaryService.deleteFromCloud(piece.getMediaId());
+                    } catch (Exception e) {
+                        logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
+                        throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
+                    }
+                }
+
+                piece.setMediaId(newMediaId);
+                piece.setContent(null);
             }
 
             piece.setType(request.getType());
         }
 
-        // type 외 일반적인 필드 변경 체크
+        // 같은 타입 내에서 파일 변경 체크 (IMAGE → 다른 IMAGE 등)
+        if (file != null && piece.getType() != Piece.Type.TEXT) {
+            String newMediaId;
+            try {
+                newMediaId = cloudinaryService.uploadToCloud(file);
+            } catch (IOException e) {
+                logger.error("Cloudinary 파일 업로드 실패: {}", e.getMessage(), e);
+                throw new RuntimeException("파일 업로드 실패: " + e.getMessage(), e);
+            }
+            updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
+
+            // 기존 파일 삭제
+            if (piece.getMediaId() != null) {
+                try {
+                    cloudinaryService.deleteFromCloud(piece.getMediaId());
+                } catch (Exception e) {
+                    logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
+                    throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
+                }
+            }
+
+            piece.setMediaId(newMediaId);
+        }
+
+        // 기타 필드 업데이트 체크
         if (request.getContent() != null && piece.getType() == Piece.Type.TEXT && !request.getContent().equals(piece.getContent())) {
             updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
             piece.setContent(request.getContent());
@@ -224,7 +275,7 @@ public class PieceService {
             updatedFields.put("isPrivate", new PieceUpdateResponse.UpdateField(piece.getIsPrivate(), request.getIsPrivate()));
             piece.setIsPrivate(request.getIsPrivate());
         }
-        
+
         if (updatedFields.isEmpty()) {
             throw new RuntimeException("수정된 내용이 없습니다.");
         }

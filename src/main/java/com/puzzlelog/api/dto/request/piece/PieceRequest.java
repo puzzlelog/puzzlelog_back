@@ -30,15 +30,12 @@ public class PieceRequest {
 
     private String content;  // Type이 TEXT일 때 필수
     
-    private List<String> tags; // 태그 선택적
+    private List<String> tags;
 
-    // 위치정보는 선택적
     private GeoJsonPoint location;
 
-    // 기본값이 있으므로 명시적으로 입력하지 않아도 된다.
     @Builder.Default
     private Boolean isPrivate = false;
     
-    // TEXT가 아닌 경우 파일을 업로드해야 함
-    private MultipartFile mediaFile;
+    // MultipartFile mediaFile은 여기서 제외하고, 컨트롤러 메서드에서 직접 받도록 함.
 }

@@ -63,7 +63,7 @@ public class PieceController {
 	// 조각 생성
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<PieceResponse>> createPiece(
-            @RequestPart(value = "data", required = true) PieceRequest request,
+    		@RequestPart("data") PieceRequest request,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         System.out.println("✅ JSON 데이터: " + request);
@@ -104,15 +104,15 @@ public class PieceController {
 	    return ResponseEntity.ok(ApiResponse.success(response, "조각 검색 성공"));
 	}
 
-	// 조각 수정
-	@PatchMapping("/{pieceId}")
-	public ResponseEntity<ApiResponse<PieceUpdateResponse>> updatePiece(
-	        @PathVariable String pieceId,
-	        @RequestBody PieceUpdateRequest request) {
-
-		PieceUpdateResponse response = pieceService.updatePiece(pieceId, request);
-	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
-	}
+//	// 조각 수정
+//	@PatchMapping("/{pieceId}")
+//	public ResponseEntity<ApiResponse<PieceUpdateResponse>> updatePiece(
+//	        @PathVariable String pieceId,
+//	        @RequestBody PieceUpdateRequest request) {
+//
+//		PieceUpdateResponse response = pieceService.updatePiece(pieceId, request);
+//	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
+//	}
 
 	// 조각 삭제 (비활성화 처리)
 	@DeleteMapping("/{pieceId}")

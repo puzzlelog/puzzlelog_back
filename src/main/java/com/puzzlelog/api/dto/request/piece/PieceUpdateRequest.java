@@ -4,23 +4,24 @@ import java.util.List;
 
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.puzzlelog.api.dao.document.Piece.Type;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+@Builder
 public class PieceUpdateRequest {
 
-    private Type type;  
-    private String content;
-    private List<String> tags;
-    private GeoJsonPoint location;
-    private String mediaId;
-    private Boolean isPrivate;
+    private Type type; // 변경될 수 있음 (선택적)
+
+    private String content; // TEXT 타입 시 필수
+
+    private List<String> tags; // 선택적
+
+    private GeoJsonPoint location; // 선택적
+
+    private Boolean isPrivate; // 선택적
 }
