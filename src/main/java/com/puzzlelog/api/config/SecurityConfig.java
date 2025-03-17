@@ -53,7 +53,7 @@ public class SecurityConfig {
             "http://puzzlelog.me" // 실제 배포될 프론트 도메인 (추후 변경)
         ));
         
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
         configuration.setAllowCredentials(true); // 쿠키/인증정보 허용 여부
         configuration.setMaxAge(3600L); // 캐싱 시간 설정(초)
