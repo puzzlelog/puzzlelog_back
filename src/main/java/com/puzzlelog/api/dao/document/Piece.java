@@ -36,6 +36,8 @@ public class Piece {
     private GeoJsonPoint location;  // 위치 정보
 
     private String mediaId;
+    
+    private String publicId;  // ✅ Cloudinary publicId 추가
 
     @Builder.Default
     private Boolean isPrivate = false;

@@ -23,6 +23,7 @@ import com.puzzlelog.api.dao.document.Piece;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
 import com.puzzlelog.api.dto.request.piece.PieceSearchRequest;
 import com.puzzlelog.api.dto.request.piece.PieceUpdateRequest;
+import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
 import com.puzzlelog.api.dto.response.piece.PagedPieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceDeleteResponse;
 import com.puzzlelog.api.dto.response.piece.PieceResponse;
@@ -68,11 +69,18 @@ public class PieceService {
         }
 
         String mediaId = null;
+        String publicId = null;
+
         if (file != null) {
             try {
                 logger.info("파일 업로드 시작: {} ({} bytes)", file.getOriginalFilename(), file.getSize());
-                mediaId = cloudinaryService.uploadToCloud(file);
-                logger.info("Cloudinary 업로드 성공: {}", mediaId);
+
+                CloudinaryUploadResponse uploadResult = cloudinaryService.uploadToCloud(file);
+
+                mediaId = uploadResult.getUrl();
+                publicId = uploadResult.getPublicId(); // 실제 publicId 저장
+
+                logger.info("Cloudinary 업로드 성공: {}, publicId: {}", mediaId, publicId);
             } catch (Exception e) {
                 logger.error("Cloudinary 업로드 실패: {}", e.getMessage(), e);
                 throw new RuntimeException("파일 업로드 실패: " + e.getMessage());
@@ -87,6 +95,7 @@ public class PieceService {
                 .location(request.getLocation())
                 .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false)
                 .mediaId(mediaId)
+                .publicId(publicId)  // 저장된 publicId를 DB에 기록
                 .createdAt(Instant.now())
                 .build();
 
@@ -173,89 +182,68 @@ public class PieceService {
 
         Map<String, PieceUpdateResponse.UpdateField> updatedFields = new LinkedHashMap<>();
 
-        // 타입 변경 체크
         if (request.getType() != null && request.getType() != piece.getType()) {
             updatedFields.put("type", new PieceUpdateResponse.UpdateField(piece.getType().name(), request.getType().name()));
 
-            // 타입이 TEXT로 변경될 경우
-            if (request.getType() == Piece.Type.TEXT) {
-                if (request.getContent() == null || request.getContent().trim().isEmpty()) {
-                    throw new RuntimeException("TEXT 타입으로 변경 시 내용은 필수입니다.");
-                }
-
-                // 기존 업로드 파일 삭제
-                if (piece.getMediaId() != null) {
-                    try {
-                        cloudinaryService.deleteFromCloud(piece.getMediaId());
-                    } catch (Exception e) {
-                        logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
-                        throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
-                    }
-                    updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), null));
-                    piece.setMediaId(null);
-                }
-
-                // content 업데이트
-                updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
-                piece.setContent(request.getContent());
-
-            } else { // 타입이 TEXT → IMAGE, VIDEO, AUDIO로 변경될 경우
-                if (file == null) {
-                    throw new RuntimeException("파일이 필수입니다.");
-                }
-
-                // 파일 업로드
-                String newMediaId;
-                try {
-                    newMediaId = cloudinaryService.uploadToCloud(file);
-                } catch (IOException e) {
-                    logger.error("Cloudinary 파일 업로드 실패: {}", e.getMessage(), e);
-                    throw new RuntimeException("파일 업로드 실패: " + e.getMessage(), e);
-                }
-                updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
-
-                // 기존 업로드 파일 삭제
-                if (piece.getMediaId() != null) {
-                    try {
-                        cloudinaryService.deleteFromCloud(piece.getMediaId());
-                    } catch (Exception e) {
-                        logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
-                        throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
-                    }
-                }
-
-                piece.setMediaId(newMediaId);
-                piece.setContent(null);
-            }
-
+            handleTypeChange(piece, request, file, updatedFields);
             piece.setType(request.getType());
         }
 
-        // 같은 타입 내에서 파일 변경 체크 (IMAGE → 다른 IMAGE 등)
         if (file != null && piece.getType() != Piece.Type.TEXT) {
-            String newMediaId;
-            try {
-                newMediaId = cloudinaryService.uploadToCloud(file);
-            } catch (IOException e) {
-                logger.error("Cloudinary 파일 업로드 실패: {}", e.getMessage(), e);
-                throw new RuntimeException("파일 업로드 실패: " + e.getMessage(), e);
-            }
-            updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
-
-            // 기존 파일 삭제
-            if (piece.getMediaId() != null) {
-                try {
-                    cloudinaryService.deleteFromCloud(piece.getMediaId());
-                } catch (Exception e) {
-                    logger.error("Cloudinary 파일 삭제 실패: {}", e.getMessage(), e);
-                    throw new RuntimeException("기존 파일 삭제 실패: " + e.getMessage(), e);
-                }
-            }
-
-            piece.setMediaId(newMediaId);
+            replaceExistingFile(piece, file, updatedFields);
         }
 
-        // 기타 필드 업데이트 체크
+        updateAdditionalFields(piece, request, updatedFields);
+
+        if (updatedFields.isEmpty()) {
+            throw new RuntimeException("수정된 내용이 없습니다.");
+        }
+
+        pieceRepository.save(piece);
+
+        return PieceUpdateResponse.builder()
+            .id(piece.getId())
+            .userId(piece.getUserId())
+            .updatedFields(updatedFields)
+            .build();
+    }
+
+    private void handleTypeChange(Piece piece, PieceUpdateRequest request, MultipartFile file,
+                                  Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
+        deleteExistingMediaIfExists(piece);
+
+        if (request.getType() == Piece.Type.TEXT) {
+            if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+                throw new RuntimeException("TEXT 타입으로 변경 시 내용은 필수입니다.");
+            }
+            updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
+            piece.setContent(request.getContent());
+            piece.setMediaId(null);
+        } else {
+            if (file == null) throw new RuntimeException("파일이 필수입니다.");
+
+            CloudinaryUploadResponse response = uploadNewFile(file);
+            String newMediaId = response.getUrl(); // URL을 mediaId로 사용
+            
+            updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
+            piece.setMediaId(newMediaId);
+            piece.setContent(null);
+        }
+    }
+
+    private void replaceExistingFile(Piece piece, MultipartFile file, 
+                                     Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
+        deleteExistingMediaIfExists(piece);
+
+        CloudinaryUploadResponse response = uploadNewFile(file);
+        String newMediaId = response.getUrl(); // URL을 mediaId로 사용
+        
+        updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
+        piece.setMediaId(newMediaId);
+    }
+
+    private void updateAdditionalFields(Piece piece, PieceUpdateRequest request,
+                                        Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
         if (request.getContent() != null && piece.getType() == Piece.Type.TEXT && !request.getContent().equals(piece.getContent())) {
             updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
             piece.setContent(request.getContent());
@@ -275,18 +263,23 @@ public class PieceService {
             updatedFields.put("isPrivate", new PieceUpdateResponse.UpdateField(piece.getIsPrivate(), request.getIsPrivate()));
             piece.setIsPrivate(request.getIsPrivate());
         }
+    }
 
-        if (updatedFields.isEmpty()) {
-            throw new RuntimeException("수정된 내용이 없습니다.");
+    private void deleteExistingMediaIfExists(Piece piece) {
+        if (piece.getMediaId() != null && piece.getPublicId() != null) {
+            String resourceType = (piece.getType() == Piece.Type.VIDEO || piece.getType() == Piece.Type.AUDIO) ? "video" : "image";
+            boolean deleted = cloudinaryService.deleteFromCloud(piece.getPublicId(), resourceType);
+            if (!deleted) logger.warn("기존 파일이 이미 삭제되었거나 존재하지 않음. publicId: {}", piece.getPublicId());
         }
-
-        pieceRepository.save(piece);
-
-        return PieceUpdateResponse.builder()
-            .id(piece.getId())
-            .userId(piece.getUserId())
-            .updatedFields(updatedFields)
-            .build();
+    }
+    
+    private CloudinaryUploadResponse uploadNewFile(MultipartFile file) {
+        try {
+            return cloudinaryService.uploadToCloud(file);
+        } catch (IOException e) {
+            logger.error("파일 업로드 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("파일 업로드 실패", e);
+        }
     }
     
     // 조각 삭제

@@ -13,5 +13,4 @@ public class SignupRequest {
     private String email;       // 필수
     private String birthDate;   // 선택 (nullable)
     private String gender;      // 선택 (nullable)
-    private String profileImg;  // 선택 (null일 경우 이미지 없음, "uploading"일 경우 이미지 업로딩 중)
 }

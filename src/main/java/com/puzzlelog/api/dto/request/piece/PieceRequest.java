@@ -5,7 +5,6 @@ import java.util.List;
 import javax.validation.constraints.NotNull;
 
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.Piece.Type;
 

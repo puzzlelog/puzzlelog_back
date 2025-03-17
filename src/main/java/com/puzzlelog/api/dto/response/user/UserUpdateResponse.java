@@ -12,9 +12,11 @@ import lombok.*;
 public class UserUpdateResponse {
     private String userId;
     private Map<String, UpdateField> updatedFields;
+    private String mediaId;
 
     @Getter
     @Setter
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class UpdateField {
         private Object before;

@@ -2,6 +2,7 @@ package com.puzzlelog.api.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
@@ -40,8 +43,11 @@ public class UserController {
     }
 
     // 회원가입
-    @PostMapping
-    public ResponseEntity<ApiResponse<SignupResponse>> signup(@RequestBody SignupRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<SignupResponse>> signup(
+            @RequestPart("data") SignupRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) {
 
         if (request.getUserId() == null || request.getUserId().isBlank()) {
             return ResponseEntity.badRequest()
@@ -63,7 +69,7 @@ public class UserController {
                     .body(ApiResponse.fail("이미 존재하는 이메일입니다."));
         }
 
-        SignupResponse response = authService.registerUser(request);
+        SignupResponse response = authService.registerUser(request, file);
         return ResponseEntity.ok(ApiResponse.success(response, "회원가입 성공"));
     }
 
@@ -104,13 +110,21 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(PagedUserResponse.from(users), "사용자 정보 조회 성공"));
     }
 
-    // 특정 사용자 정보 수정
-    @PatchMapping("/{userId}")
+    // 특정 사용자 정보 수정 (Multipart 처리로 변경)
+    @PatchMapping(value = "/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserUpdateResponse>> updateUser(
-        @PathVariable String userId,
-        @RequestBody UserUpdateRequest request
+            @PathVariable String userId,
+            @RequestPart(value = "data", required = false) UserUpdateRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        UserUpdateResponse response = userService.updateUser(userId, request);
+        // 둘 다 null이거나 비어있으면 예외 처리
+        if ((request == null || request.isEmpty()) && (file == null || file.isEmpty())) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.fail("수정할 데이터 또는 파일을 하나 이상 첨부해야 합니다.")
+            );
+        }
+
+        UserUpdateResponse response = userService.updateUser(userId, request, file);
         String updatedFields = String.join(", ", response.getUpdatedFields().keySet());
 
         return ResponseEntity.ok(

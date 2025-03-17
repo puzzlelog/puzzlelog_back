@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -61,11 +60,11 @@ public class PieceController {
     }
     
 	// 조각 생성
-    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PieceResponse>> createPiece(
-    		@RequestPart("data") PieceRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
-
+            @RequestPart("data") PieceRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) {
         System.out.println("✅ JSON 데이터: " + request);
         System.out.println("✅ 파일: " + (file != null ? file.getOriginalFilename() : "파일 없음"));
 
@@ -104,15 +103,16 @@ public class PieceController {
 	    return ResponseEntity.ok(ApiResponse.success(response, "조각 검색 성공"));
 	}
 
-//	// 조각 수정
-//	@PatchMapping("/{pieceId}")
-//	public ResponseEntity<ApiResponse<PieceUpdateResponse>> updatePiece(
-//	        @PathVariable String pieceId,
-//	        @RequestBody PieceUpdateRequest request) {
-//
-//		PieceUpdateResponse response = pieceService.updatePiece(pieceId, request);
-//	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
-//	}
+	// 조각 수정
+	@PatchMapping(value = "/{pieceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<ApiResponse<PieceUpdateResponse>> updatePiece(
+	        @PathVariable String pieceId,
+	        @RequestPart("data") PieceUpdateRequest request,
+	        @RequestPart(value = "file", required = false) MultipartFile file
+	) {
+	    PieceUpdateResponse response = pieceService.updatePiece(pieceId, request, file);
+	    return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
+	}
 
 	// 조각 삭제 (비활성화 처리)
 	@DeleteMapping("/{pieceId}")

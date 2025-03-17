@@ -5,12 +5,14 @@ import java.time.LocalDate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
 import com.puzzlelog.api.dto.request.auth.SignupRequest;
 import com.puzzlelog.api.dto.response.auth.LoginResponse;
 import com.puzzlelog.api.dto.response.auth.SignupResponse;
+import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
 @Service
@@ -18,10 +20,12 @@ public class AuthService { // 인증 기능
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CloudinaryService cloudinaryService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, CloudinaryService cloudinaryService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.cloudinaryService = cloudinaryService;
     }
     
     // 아이디 중복 체크
@@ -36,14 +40,30 @@ public class AuthService { // 인증 기능
 
     // 회원가입 로직
     @Transactional
-    public SignupResponse registerUser(SignupRequest request) {
+    public SignupResponse registerUser(SignupRequest request, MultipartFile file) {
+        String profileImgUrl = null;
+
+        if (file != null && !file.isEmpty()) {
+            try {
+                // 프로필 이미지는 고유한 public_id로 업로드
+                String publicId = "$profile_" + request.getUserId();
+
+                CloudinaryUploadResponse uploadResult = cloudinaryService.uploadImageToCloud(file, publicId);
+
+                profileImgUrl = uploadResult.getUrl();
+
+            } catch (Exception e) {
+                throw new RuntimeException("프로필 이미지 업로드 실패: " + e.getMessage(), e);
+            }
+        }
+
         User user = User.builder()
                 .userId(request.getUserId())
                 .userPwd(passwordEncoder.encode(request.getUserPwd()))
                 .email(request.getEmail())
                 .birthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null)
                 .gender(request.getGender() != null ? User.Gender.valueOf(request.getGender()) : null)
-                .profileImg(request.getProfileImg())
+                .profileImg(profileImgUrl)
                 .build();
 
         User savedUser = userRepository.save(user);

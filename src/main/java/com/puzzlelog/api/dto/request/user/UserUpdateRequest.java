@@ -22,4 +22,15 @@ public class UserUpdateRequest {
     // 관리자 전용 필드
     private String status;      // ACTIVE, DELETED, BANNED
     private String role;        // USER, ADMIN
+    
+    public boolean isEmpty() {
+        return userPwd == null &&
+               nickname == null &&
+               birthDate == null &&
+               gender == null &&
+               isAlarm == null &&
+               profileImg == null &&
+               status == null &&
+               role == null;
+    }
 }
