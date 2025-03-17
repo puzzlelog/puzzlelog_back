@@ -9,7 +9,7 @@ public class CloudinaryConfig {
 
     @Bean
     public Cloudinary cloudinary() {
-        String cloudinaryUrl = System.getenv("CLOUDINARY_URL");
+        String cloudinaryUrl = System.getProperty("CLOUDINARY_URL");
 
         if (cloudinaryUrl == null || cloudinaryUrl.isEmpty()) {
             throw new RuntimeException("❌ CLOUDINARY_URL 환경 변수가 설정되지 않았습니다.");

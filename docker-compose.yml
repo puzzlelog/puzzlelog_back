@@ -1,19 +1,13 @@
 version: '3.8'
 services:
   app:
-    build: .  # ✅ 로컬에서 직접 빌드
+    build: .  # 로컬에서 직접 빌드
     image: puzzlelog
     container_name: puzzlelog-app
     restart: always
     env_file:
       - .env  # ✅ `.env` 파일에서 환경 변수 자동 로드
     volumes:
-      - ./puzzlelog_back/.env:/puzzlelog_back/.env  # ✅ .env 파일을 컨테이너 내부에 마운트
+      - ./puzzlelog_back/.env:/puzzlelog_back/.env  # ✅ `.env` 파일 컨테이너 내부 마운트
     ports:
       - "80:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-      - CLOUDINARY_URL=${CLOUDINARY_URL}
