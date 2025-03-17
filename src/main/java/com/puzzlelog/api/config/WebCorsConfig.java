@@ -21,7 +21,7 @@ public class WebCorsConfig {
             "https://puzzlelog.me"
         ));
 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);  // 인증 허용 여부
         config.setMaxAge(3600L);  // preflight 요청 캐싱 시간
