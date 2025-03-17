@@ -1,13 +1,13 @@
 version: '3.8'
 services:
   app:
-    build: .  # 로컬에서 직접 빌드
+    build: .
     image: puzzlelog
     container_name: puzzlelog-app
     restart: always
     env_file:
-      - .env  # ✅ `.env` 파일에서 환경 변수 자동 로드
+      - .env
     volumes:
-      - ./puzzlelog_back/.env:/puzzlelog_back/.env  # ✅ `.env` 파일 컨테이너 내부 마운트
+      - ./.env:/puzzlelog_back/.env  # ✅ 수정된 위치
     ports:
       - "80:8080"

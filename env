@@ -1,6 +1,0 @@
-SPRING_DATASOURCE_URL=jdbc:mysql://mysql.puzzlelog.me:3306/puzzlelog
-SPRING_DATASOURCE_USERNAME=puzzleuser
-SPRING_DATASOURCE_PASSWORD=puzzle123log
-SPRING_DATA_MONGODB_URI=mongodb+srv://puzzleuser:puzzle123log@puzzlelog.2q7ki.mongodb.net/puzzlelog?retryWrites=true&w=majority
-
-CLOUDINARY_URL=cloudinary://518195624815133:Zdet3mY26XbbokQWME5HLeJiBvk@diyietpes
