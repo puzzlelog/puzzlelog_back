@@ -58,7 +58,7 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://puzzlelog.me",
             "https://puzzlelog.me",
-            "null"
+            "null" // 임시 방편 (form submit - HTML, form 자체는 자기 자신에게 보내는 것 - Axios나 fetch API 추천)
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

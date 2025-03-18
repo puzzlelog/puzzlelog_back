@@ -1,5 +1,7 @@
 package com.puzzlelog.api.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -7,11 +9,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.puzzlelog.api.dao.document.FriendHistory;
 import com.puzzlelog.api.dao.entity.Friend;
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.response.friend.FriendDetailResponse;
 import com.puzzlelog.api.dto.response.friend.FriendResponse;
 import com.puzzlelog.api.dto.response.friend.PagedFriendResponse;
+import com.puzzlelog.api.repository.mongo.FriendHistoryRepository;
 import com.puzzlelog.api.repository.mysql.FriendRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
@@ -20,11 +24,17 @@ public class FriendService {
     
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final FriendHistoryRepository friendHistoryRepository;
 
-    public FriendService(FriendRepository friendRepository, UserRepository userRepository) {
-        this.friendRepository = friendRepository;
-        this.userRepository = userRepository;
-    }
+    public FriendService(
+    	    FriendRepository friendRepository,
+    	    UserRepository userRepository,
+    	    FriendHistoryRepository friendHistoryRepository
+    	) {
+    	    this.friendRepository = friendRepository;
+    	    this.userRepository = userRepository;
+    	    this.friendHistoryRepository = friendHistoryRepository;
+    	}
     
     // 상태 확인 메소드
     private void validateUserStatus(User user, boolean isRequester) {
@@ -48,12 +58,19 @@ public class FriendService {
     // 친구 요청 보내기
     @Transactional
     public FriendResponse sendFriendRequest(String userId, String friendId) {
+    	// 본인이 본인에게 친구 요청 방지
+        if (userId.equals(friendId)) {
+            throw new IllegalArgumentException("본인에게 친구 요청을 보낼 수 없습니다.");
+        }
+    	
         User requester = getUserByUserId(userId, true);
         User receiver = getUserByUserId(friendId, false);
 
         Friend existingFriend = friendRepository
                 .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
                 .orElse(null);
+
+        Friend friend;
 
         if (existingFriend != null) {
             switch (existingFriend.getStatus()) {
@@ -66,22 +83,32 @@ public class FriendService {
                 case DEACTIVATED:
                 case REJECTED:
                     existingFriend.setStatus(Friend.Status.PENDING);
-                    friendRepository.save(existingFriend);
-                    return FriendResponse.from(existingFriend);
+                    friend = friendRepository.save(existingFriend);
+                    break;
                 default:
                     throw new IllegalStateException("예상하지 못한 상태: " + existingFriend.getStatus());
             }
+        } else {
+            friend = Friend.builder()
+                    .user(requester)
+                    .friend(receiver)
+                    .status(Friend.Status.PENDING)
+                    .build();
+
+            friend = friendRepository.save(friend);
         }
 
-        Friend friend = Friend.builder()
-                .user(requester)
-                .friend(receiver)
-                .status(Friend.Status.PENDING)
+        // MongoDB에 친구 요청 상태 이력 저장
+        FriendHistory history = FriendHistory.builder()
+                .userId(userId)
+                .friendId(friendId)
+                .status(friend.getStatus().name())
+                .timestamp(LocalDateTime.now())
                 .build();
 
-        Friend savedFriend = friendRepository.save(friend);
+        friendHistoryRepository.save(history);
 
-        return FriendResponse.from(savedFriend);
+        return FriendResponse.from(friend);
     }
 
     // 친구 요청 수락
@@ -105,6 +132,14 @@ public class FriendService {
             .build();
 
         friendRepository.save(reciprocalFriend);
+
+        // ✅ 친구 수락 기록 MongoDB 저장
+        friendHistoryRepository.save(FriendHistory.builder()
+            .userId(userId)              // 요청을 수락한 사람
+            .friendId(friendId)          // 친구 요청 보낸 사람
+            .status(Friend.Status.ACCEPTED.name())
+            .timestamp(LocalDateTime.now())
+            .build());
     }
     
     // 친구 요청 거절
@@ -120,6 +155,14 @@ public class FriendService {
 
         friendRequest.setStatus(Friend.Status.REJECTED);
         friendRepository.save(friendRequest);
+
+        // ✅ 친구 요청 거절 기록 MongoDB 저장
+        friendHistoryRepository.save(FriendHistory.builder()
+            .userId(userId)              // 요청을 거절한 사람
+            .friendId(friendId)          // 친구 요청 보낸 사람
+            .status(Friend.Status.REJECTED.name())
+            .timestamp(LocalDateTime.now())
+            .build());
     }
 
     // 친구 목록 조회 (페이징, 상태별 조회)
@@ -177,7 +220,13 @@ public class FriendService {
         friend.setStatus(Friend.Status.BLOCKED);
         friendRepository.save(friend);
 
-        // ⚠️ 상대방의 친구 상태는 변경하지 않음 (상대방은 차단 사실 모름)
+        // MongoDB에 차단 상태 기록 저장
+        friendHistoryRepository.save(FriendHistory.builder()
+            .userId(userId)
+            .friendId(friendId)
+            .status(Friend.Status.BLOCKED.name())
+            .timestamp(LocalDateTime.now())
+            .build());
 
         return FriendResponse.from(friend);
     }
@@ -199,6 +248,14 @@ public class FriendService {
         // 차단 해제 시 기존 친구 상태로 복원 (ACCEPTED)
         friend.setStatus(Friend.Status.ACCEPTED);
         Friend updatedFriend = friendRepository.save(friend);
+
+        // MongoDB에 차단 해제 상태 기록 저장
+        friendHistoryRepository.save(FriendHistory.builder()
+            .userId(userId)
+            .friendId(friendId)
+            .status(Friend.Status.ACCEPTED.name()) // 차단 해제 시 ACCEPTED 상태로 복귀
+            .timestamp(LocalDateTime.now())
+            .build());
 
         return FriendResponse.from(updatedFriend);
     }
@@ -224,6 +281,14 @@ public class FriendService {
                     reciprocal.setStatus(Friend.Status.DEACTIVATED);
                     friendRepository.save(reciprocal);
                 });
+
+        // 친구 삭제 기록 MongoDB 저장
+        friendHistoryRepository.save(FriendHistory.builder()
+            .userId(userId)     // 삭제한 사람
+            .friendId(friendId) // 삭제된 상대방
+            .status(Friend.Status.DEACTIVATED.name())
+            .timestamp(LocalDateTime.now())
+            .build());
 
         return FriendResponse.from(friend);
     }

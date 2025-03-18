@@ -1,6 +1,7 @@
 package com.puzzlelog.api.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,12 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.puzzlelog.api.dao.document.UserHistory;
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
 import com.puzzlelog.api.dto.response.user.UserResponse;
 import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
+import com.puzzlelog.api.repository.mongo.UserHistoryRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
 @Service
@@ -31,13 +34,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    private final UserHistoryRepository userHistoryRepository;
 
     public UserService(UserRepository userRepository, 
             PasswordEncoder passwordEncoder,
-            CloudinaryService cloudinaryService) {
+            CloudinaryService cloudinaryService,
+            UserHistoryRepository userHistoryRepository) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.cloudinaryService = cloudinaryService;
+		this.userHistoryRepository = userHistoryRepository;
 	}
 
     // 전체 사용자 조회 (페이징)
@@ -63,29 +69,35 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         Map<String, UserUpdateResponse.UpdateField> updatedFields = new HashMap<>();
+        Map<String, Object> historyFields = new HashMap<>();
 
         if (request != null) {
             if (request.getUserPwd() != null) {
                 user.setUserPwd(passwordEncoder.encode(request.getUserPwd()));
                 updatedFields.put("userPwd", new UserUpdateResponse.UpdateField("(비밀번호 변경됨)", "(비밀번호 변경됨)"));
+                historyFields.put("userPwd", "(비밀번호 변경됨)");
             }
 
             if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
+            	historyFields.put("nickname", Map.of("before", user.getNickname(), "after", request.getNickname()));
                 updatedFields.put("nickname", new UserUpdateResponse.UpdateField(user.getNickname(), request.getNickname()));
                 user.setNickname(request.getNickname());
             }
 
             if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate().toString())) {
+            	historyFields.put("birthDate", Map.of("before", user.getBirthDate().toString(), "after", request.getBirthDate()));
                 updatedFields.put("birthDate", new UserUpdateResponse.UpdateField(user.getBirthDate().toString(), request.getBirthDate()));
                 user.setBirthDate(LocalDate.parse(request.getBirthDate()));
             }
 
             if (request.getGender() != null && !request.getGender().equals(user.getGender().name())) {
+            	historyFields.put("gender", Map.of("before", user.getGender().name(), "after", request.getGender()));
                 updatedFields.put("gender", new UserUpdateResponse.UpdateField(user.getGender().name(), request.getGender()));
                 user.setGender(User.Gender.valueOf(request.getGender()));
             }
 
             if (request.getIsAlarm() != null && !request.getIsAlarm().equals(user.getIsAlarm())) {
+            	historyFields.put("isAlarm", Map.of("before", user.getIsAlarm(), "after", request.getIsAlarm()));
                 updatedFields.put("isAlarm", new UserUpdateResponse.UpdateField(user.getIsAlarm(), request.getIsAlarm()));
                 user.setIsAlarm(request.getIsAlarm());
             }
@@ -98,6 +110,7 @@ public class UserService {
                     if (!deleted) {
                         logger.warn("프로필 이미지가 이미 삭제되었거나 존재하지 않습니다: {}", publicId);
                     }
+                    historyFields.put("profileImg", Map.of("before", user.getProfileImg(), "after", null));
                     updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(user.getProfileImg(), null));
                     user.setProfileImg(null);
                 } catch (Exception e) {
@@ -113,6 +126,7 @@ public class UserService {
             try {
                 CloudinaryUploadResponse uploadResult = cloudinaryService.uploadImageToCloud(file, publicId);
                 mediaId = uploadResult.getUrl(); // 업로드된 URL
+                historyFields.put("profileImg", Map.of("before", user.getProfileImg(), "after", mediaId));
                 updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(user.getProfileImg(), mediaId));
                 user.setProfileImg(mediaId);
             } catch (Exception e) {
@@ -125,6 +139,16 @@ public class UserService {
         }
 
         userRepository.save(user);
+        
+        // MongoDB 기록 추가
+        userHistoryRepository.save(UserHistory.builder()
+            .userId(userId)
+            .action("UPDATE")
+            .reason("본인 수정") // 관리자는 다른 메서드에서 처리
+            .changedBy(userId)
+            .timestamp(LocalDateTime.now())
+            .changedFields(historyFields)
+            .build());
 
         return UserUpdateResponse.builder()
             .userId(user.getUserId())
@@ -141,6 +165,16 @@ public class UserService {
 
         user.setStatus(User.Status.DELETED);
         userRepository.save(user);
+        
+        // ✅ MongoDB 삭제 기록 추가
+        userHistoryRepository.save(UserHistory.builder()
+            .userId(userId)
+            .action("DELETE")
+            .reason("본인 삭제")
+            .changedBy(userId)
+            .timestamp(LocalDateTime.now())
+            .changedFields(Map.of("status", Map.of("before", "ACTIVE", "after", "DELETED")))
+            .build());
     }
     
     // 중복 체크

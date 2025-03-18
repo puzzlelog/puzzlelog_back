@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmail(String email);
     boolean existsByNickname(String nickname);
     
-    // 조회 사용
+    // 조회 사용 (SELECT 땐 JAVA 쓰는 것이 낫다.)
     @Query("SELECT u FROM User u WHERE "
             + "(:#{#req.email} IS NULL OR u.email = :#{#req.email}) AND "
             + "(:#{#req.userId} IS NULL OR u.userId = :#{#req.userId}) AND "
