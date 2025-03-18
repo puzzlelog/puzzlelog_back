@@ -20,7 +20,7 @@ import lombok.Setter;
 @Builder
 public class PieceResponse {
     private String id;
-    private Integer userId;
+    private String userId;
     private String type;
     private String content;
     private List<String> tags;

@@ -22,7 +22,7 @@ import lombok.Setter;
 public class PieceRequest {
 
     @NotNull(message = "사용자 ID는 필수입니다.")
-    private Integer userId;
+    private String userId;
 
     @NotNull(message = "타입은 필수입니다.")
     private Type type;
@@ -35,6 +35,4 @@ public class PieceRequest {
 
     @Builder.Default
     private Boolean isPrivate = false;
-    
-    // MultipartFile mediaFile은 여기서 제외하고, 컨트롤러 메서드에서 직접 받도록 함.
 }

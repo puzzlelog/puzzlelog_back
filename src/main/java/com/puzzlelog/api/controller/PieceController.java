@@ -68,7 +68,9 @@ public class PieceController {
         System.out.println("✅ JSON 데이터: " + request);
         System.out.println("✅ 파일: " + (file != null ? file.getOriginalFilename() : "파일 없음"));
 
-        PieceResponse response = pieceService.addPiece(request, file);
+        // 서비스 호출 시 request에서 받은 userId를 직접 전달
+        PieceResponse response = pieceService.addPiece(request, file, request.getUserId());
+
         return ResponseEntity.ok(ApiResponse.success(response, "조각이 생성되었습니다."));
     }
 

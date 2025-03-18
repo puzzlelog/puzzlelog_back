@@ -8,10 +8,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class PieceDeleteResponse {
-    private String id;          // 조각 ID
-    private Integer userId;     // 사용자 ID
+    private String id;      
+    private String userId;
 
-    public static PieceDeleteResponse from(String id, Integer userId, Boolean isDeleted) {
+    public static PieceDeleteResponse from(String id, String userId) {
         return PieceDeleteResponse.builder()
                 .id(id)
                 .userId(userId)

@@ -25,7 +25,7 @@ public class Piece {
     @Id
     private String id;
 
-    private Integer userId; // MySQL users 테이블의 id 참조
+    private String userId; // MySQL users 테이블의 user_id 참조
 
     private Type type;  // 조각 유형 (text, image, video, audio)
     

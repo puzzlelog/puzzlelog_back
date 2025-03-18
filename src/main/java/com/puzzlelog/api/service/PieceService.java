@@ -2,7 +2,6 @@ package com.puzzlelog.api.service;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.Piece;
+import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
 import com.puzzlelog.api.dto.request.piece.PieceSearchRequest;
 import com.puzzlelog.api.dto.request.piece.PieceUpdateRequest;
@@ -49,9 +49,15 @@ public class PieceService {
         this.cloudinaryService = cloudinaryService;
     }
 
-    // 조각 추가 메서드
-    public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
-        if (request.getUserId() == null) {
+    // 조각 추가 메서드 (완전한 형태)
+    public PieceResponse addPiece(PieceRequest request, MultipartFile file, String authenticatedUserId) {
+        
+        // 인증된 사용자가 본인이 맞는지 검증 (권한 체크)
+        if (!authenticatedUserId.equals(request.getUserId())) {
+            throw new RuntimeException("본인만 조각을 추가할 수 있습니다.");
+        }
+
+        if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
             throw new RuntimeException("사용자 ID는 필수입니다.");
         }
         if (request.getType() == null) {
@@ -60,7 +66,15 @@ public class PieceService {
         if (request.getType() == Piece.Type.TEXT && (request.getContent() == null || request.getContent().trim().isEmpty())) {
             throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
         }
-        if (!userRepository.existsById(request.getUserId())) {
+
+        // 사용자 존재 여부 및 상태 체크 (추가된 부분)
+        User user = userRepository.findByUserId(request.getUserId())
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+
+        if (user.getStatus() == User.Status.BANNED) {
+            throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
+        }
+        if (user.getStatus() == User.Status.DELETED) {
             throw new RuntimeException("존재하지 않는 사용자입니다.");
         }
 
@@ -78,7 +92,7 @@ public class PieceService {
                 CloudinaryUploadResponse uploadResult = cloudinaryService.uploadToCloud(file);
 
                 mediaId = uploadResult.getUrl();
-                publicId = uploadResult.getPublicId(); // 실제 publicId 저장
+                publicId = uploadResult.getPublicId();
 
                 logger.info("Cloudinary 업로드 성공: {}, publicId: {}", mediaId, publicId);
             } catch (Exception e) {
@@ -95,13 +109,15 @@ public class PieceService {
                 .location(request.getLocation())
                 .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false)
                 .mediaId(mediaId)
-                .publicId(publicId)  // 저장된 publicId를 DB에 기록
+                .publicId(publicId)
+                .isDeleted(false)  // 명시적으로 false 추가
                 .createdAt(Instant.now())
                 .build();
 
         Piece savedPiece = pieceRepository.save(piece);
         return PieceResponse.from(savedPiece);
     }
+
     
     // 단일 조회 메서드
     @Transactional(readOnly = true)
@@ -131,36 +147,43 @@ public class PieceService {
     // 목록 조회 메서드 (페이징 포함)
     @Transactional(readOnly = true)
     public PagedPieceResponse searchPieces(PieceSearchRequest request, int page, int size) {
-        request.applyDateFilters(); // 추가된 메서드 호출
+        request.applyDateFilters();
 
         Criteria criteria = new Criteria();
 
-        if (request.getUserId() != null) {
+        if (request.getUserId() != null && !request.getUserId().trim().isEmpty()) {
             criteria.and("userId").is(request.getUserId());
         }
+
         if (request.getType() != null) {
             criteria.and("type").is(request.getType());
         }
+
         if (request.getContent() != null) {
             criteria.and("content").regex(".*" + request.getContent() + ".*", "i");
         }
+
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             criteria.and("tags").in(request.getTags());
         }
+
         if (request.getIsPrivate() != null) {
             criteria.and("isPrivate").is(request.getIsPrivate());
         }
+
         if (request.getIsDeleted() != null) {
             criteria.and("isDeleted").is(request.getIsDeleted());
         }
-        if (request.getCreatedAtFrom() != null || request.getCreatedAtTo() != null) {
-            LocalDate fromDate = request.getCreatedAtFrom() != null
-                    ? request.getCreatedAtFrom() : LocalDate.of(1970, 1, 1);
-            LocalDate toDate = request.getCreatedAtTo() != null
-                    ? request.getCreatedAtTo() : LocalDate.now();
 
-            Instant fromInstant = fromDate.atStartOfDay(ZoneOffset.UTC).toInstant();
-            Instant toInstant = toDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        // 날짜 필터 처리 (LocalDate → Instant 변환 명확히)
+        if (request.getCreatedAtFrom() != null || request.getCreatedAtTo() != null) {
+            Instant fromInstant = request.getCreatedAtFrom() != null
+                ? request.getCreatedAtFrom().atStartOfDay(ZoneOffset.UTC).toInstant()
+                : Instant.ofEpochSecond(0);
+
+            Instant toInstant = request.getCreatedAtTo() != null
+                ? request.getCreatedAtTo().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+                : Instant.now();
 
             criteria.and("createdAt").gte(fromInstant).lt(toInstant);
         }

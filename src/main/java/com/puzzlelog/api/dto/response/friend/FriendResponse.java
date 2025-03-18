@@ -9,13 +9,13 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class FriendResponse {
-    private int userId;
-    private int friendId;
+    private String userId;
+    private String friendId;
 
     public static FriendResponse from(Friend friend) {
         return FriendResponse.builder()
-                .userId(friend.getUser().getId())
-                .friendId(friend.getFriend().getId())
+                .userId(friend.getUser().getUserId())
+                .friendId(friend.getFriend().getUserId())
                 .build();
     }
 }

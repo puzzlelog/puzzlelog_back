@@ -15,7 +15,7 @@ import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
     
-    Optional<User> findByUserId(String userId);
+	Optional<User> findByUserId(String userId);
     Optional<User> findByEmail(String email);
     Optional<User> findByNickname(String nickname);
     
