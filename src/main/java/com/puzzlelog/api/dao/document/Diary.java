@@ -5,7 +5,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.bson.types.ObjectId;
 import lombok.*;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -20,24 +19,23 @@ public class Diary {
     @Id
     private ObjectId id;
 
-    private String userId;            // 작성자의 사용자 ID (MySQL 사용자 테이블과 연결)
-    private String title;             // 일기 제목
-    private DiaryType type;           // DIARY 또는 TIMECAPSULE
-    private List<DiaryPiece> pieces;  // 꾸며진 조각들의 리스트
+    private String userId;
+    private String title;
+    private DiaryType type;
+    private List<DiaryPiece> pieces;
 
-    private String themeColor;        // AI 감정 분석 기반 테마 색상 (HEX 코드)
+    private String themeColor;
 
     @Builder.Default
-    private Boolean isShared = false; // 공개 여부 (기본값 false)
+    private Boolean isShared = false;
     @Builder.Default
-    private Boolean isDeleted = false; // 삭제 여부
+    private Boolean isDeleted = false;
 
     @CreatedDate
-    private Instant createdAt;        // 생성된 날짜 (자동 설정)
-    private Instant updatedAt;        // 수정된 날짜
-    private Instant openAt;           // 타임캡슐 공개 시간 (타임캡슐 전용)
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant openAt;
 
-    
     public enum DiaryType {
         DIARY, TIMECAPSULE
     }
@@ -48,8 +46,13 @@ public class Diary {
     @AllArgsConstructor
     @Builder
     public static class DiaryPiece {
-        private String pieceId;               // 조각 ID (MongoDB의 Piece 참조)
-        private PieceDecoration decoration;   // 꾸밈 요소 (폰트, 크기, 위치 등)
+        private String pieceId;
+        private PieceType pieceType;        // 타입 구분
+        private PieceDecoration decoration; // 꾸밈 요소
+    }
+
+    public enum PieceType {
+        TEXT, IMAGE, VIDEO, AUDIO
     }
 
     @Getter
@@ -58,61 +61,101 @@ public class Diary {
     @AllArgsConstructor
     @Builder
     public static class PieceDecoration {
-        // 공통적인 꾸밈 요소
-        private Position position;        // 위치(x,y 좌표)
-        private Double scale;             // 크기 조정값
-        private Rotation rotation;        // 회전값
+        private Position position;
+        private Double scale;
+        private Rotation rotation;
 
-        // TEXT 전용 꾸밈 요소 (텍스트에만 적용됨)
-        private TextStyle textStyle;
-
-        // 미디어 타입 (IMAGE, VIDEO, AUDIO)에만 적용되는 꾸밈 요소
-        private MediaStyle mediaStyle;
+        private TextStyle textStyle;       // TEXT 타입 전용
+        private ImageStyle imageStyle;     // IMAGE 타입 전용
+        private VideoStyle videoStyle;     // VIDEO 타입 전용
+        private AudioStyle audioStyle;     // AUDIO 타입 전용
     }
 
-    // 텍스트 전용 스타일 클래스
+    // TEXT 전용 스타일
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class TextStyle {
-        private String font;              // 글씨체
-        private Integer fontSize;         // 폰트 크기
-        private String color;             // 글자 색상
-        private Boolean bold;             // 볼드 여부
-        private Boolean italic;           // 이탤릭 여부
-        private String align;             // 정렬 (left, center, right 등)
+        private String font;
+        private Integer fontSize;
+        private String color;
+        private Boolean bold;
+        private Boolean italic;
+        private String align;
     }
 
-    // 미디어 전용 스타일 클래스
+    // IMAGE 전용 스타일 (Cloudinary 기능에 맞춤)
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class MediaStyle {
-        private String borderColor;       // 테두리 색상
-        private Double opacity;           // 투명도
-        private String filter;            // CSS 필터 효과 (blur, grayscale 등)
+    public static class ImageStyle {
+        private Crop crop;                 // 크롭 정보
+        private List<String> effects;      // 특수 효과 필터 (blur, grayscale 등)
+        private String borderColor;        // 테두리 색상
+        private Double opacity;            // 투명도
     }
 
+    // VIDEO 전용 스타일 (Cloudinary 기능에 맞춤)
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Position { // 조각 위치
+    public static class VideoStyle {
+        private Crop crop;                 // 크롭 정보
+        private List<String> effects;      // 특수 효과 (reverse, accelerate 등)
+        private String borderColor;        // 테두리 색상
+        private Double opacity;            // 투명도
+    }
+
+    // AUDIO 전용 스타일 (Cloudinary 기능에 맞춤)
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class AudioStyle {
+        private Double startOffset;        // 시작 지점(초)
+        private Double endOffset;          // 종료 지점(초)
+        private Integer volume;            // 볼륨 조절(%, 기본 100)
+    }
+
+    // 크롭 정보 (IMAGE, VIDEO 공통)
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Crop {
+        private Integer width;
+        private Integer height;
+        private Integer x;
+        private Integer y;
+        private String gravity; // 크롭 기준 (center, north, south 등)
+    }
+
+    // 위치 공통
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Position {
         private Double x;
         private Double y;
     }
 
+    // 회전 공통
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Rotation { // 회전값
+    public static class Rotation {
         private Double angle;
     }
 }
