@@ -35,7 +35,17 @@ public class FriendController {
             @PathVariable String friendId
     ) {
         friendService.acceptFriendRequest(userId, friendId);
-        return ResponseEntity.ok(ApiResponse.successMessage("친구 요청 수락 성공"));
+        return ResponseEntity.ok(ApiResponse.successMessage("친구 요청 수락했습니다."));
+    }
+    
+    // 친구 요청 거절
+    @PatchMapping("/{userId}/requests/{friendId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectFriendRequest(
+            @PathVariable String userId,
+            @PathVariable String friendId
+    ) {
+        friendService.rejectFriendRequest(userId, friendId);
+        return ResponseEntity.ok(ApiResponse.successMessage("친구 요청을 거절했습니다."));
     }
 
     // 친구 목록 조회 (페이징, 상태별 조회)

@@ -1,7 +1,5 @@
 package com.puzzlelog.api.service;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -50,21 +48,15 @@ public class FriendService {
     // 친구 요청 보내기
     @Transactional
     public FriendResponse sendFriendRequest(String userId, String friendId) {
-        User requester = userRepository.findByUserId(userId)
-            .orElseThrow(() -> new RuntimeException("요청 사용자를 찾을 수 없습니다."));
+        User requester = getUserByUserId(userId, true);
+        User receiver = getUserByUserId(friendId, false);
 
-        User receiver = userRepository.findByUserId(friendId)
-            .orElseThrow(() -> new RuntimeException("대상 사용자를 찾을 수 없습니다."));
+        Friend existingFriend = friendRepository
+                .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
+                .orElse(null);
 
-        validateUserStatus(requester, true);
-        validateUserStatus(receiver, false);
-
-        List<Friend> existingFriends = friendRepository.findAllByUser_UserIdAndFriend_UserId(userId, friendId);
-
-        if (!existingFriends.isEmpty()) {
-            Friend.Status status = existingFriends.get(0).getStatus();
-
-            switch (status) {
+        if (existingFriend != null) {
+            switch (existingFriend.getStatus()) {
                 case PENDING:
                     throw new RuntimeException("이미 친구 요청한 상태입니다.");
                 case ACCEPTED:
@@ -72,19 +64,20 @@ public class FriendService {
                 case BLOCKED:
                     throw new RuntimeException("차단된 사용자에게 친구 요청을 보낼 수 없습니다.");
                 case DEACTIVATED:
-                    existingFriends.get(0).setStatus(Friend.Status.PENDING);
-                    friendRepository.save(existingFriends.get(0));
-                    return FriendResponse.from(existingFriends.get(0));
+                case REJECTED:
+                    existingFriend.setStatus(Friend.Status.PENDING);
+                    friendRepository.save(existingFriend);
+                    return FriendResponse.from(existingFriend);
                 default:
-                    throw new IllegalStateException("예상하지 못한 상태: " + status);
+                    throw new IllegalStateException("예상하지 못한 상태: " + existingFriend.getStatus());
             }
         }
 
         Friend friend = Friend.builder()
-            .user(requester)
-            .friend(receiver)
-            .status(Friend.Status.PENDING)
-            .build();
+                .user(requester)
+                .friend(receiver)
+                .status(Friend.Status.PENDING)
+                .build();
 
         Friend savedFriend = friendRepository.save(friend);
 
@@ -99,7 +92,7 @@ public class FriendService {
                 .orElseThrow(() -> new RuntimeException("해당 친구 요청을 찾을 수 없습니다."));
 
         if (friendRequest.getStatus() != Friend.Status.PENDING) {
-            throw new RuntimeException("친구 요청이 이미 처리되었습니다.");
+            throw new RuntimeException("이미 처리된 친구 요청입니다.");
         }
 
         friendRequest.setStatus(Friend.Status.ACCEPTED);
@@ -112,6 +105,21 @@ public class FriendService {
             .build();
 
         friendRepository.save(reciprocalFriend);
+    }
+    
+    // 친구 요청 거절
+    @Transactional
+    public void rejectFriendRequest(String userId, String friendId) {
+        Friend friendRequest = friendRepository
+            .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
+            .orElseThrow(() -> new RuntimeException("해당 친구 요청을 찾을 수 없습니다."));
+
+        if (friendRequest.getStatus() != Friend.Status.PENDING) {
+            throw new RuntimeException("이미 처리된 친구 요청입니다.");
+        }
+
+        friendRequest.setStatus(Friend.Status.REJECTED);
+        friendRepository.save(friendRequest);
     }
 
     // 친구 목록 조회 (페이징, 상태별 조회)
@@ -159,20 +167,19 @@ public class FriendService {
         User requester = getUserByUserId(userId, true);
         User target = getUserByUserId(friendId, false);
 
-        Friend friend = friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
-                .orElseGet(() -> Friend.builder()
-                        .user(requester)
-                        .friend(target)
-                        .build());
-
-        if (friend.getStatus() == Friend.Status.BLOCKED) {
-            throw new RuntimeException("이미 차단된 사용자입니다.");
-        }
+        Friend friend = friendRepository
+            .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
+            .orElseGet(() -> Friend.builder()
+                    .user(requester)
+                    .friend(target)
+                    .build());
 
         friend.setStatus(Friend.Status.BLOCKED);
-        Friend savedFriend = friendRepository.save(friend);
+        friendRepository.save(friend);
 
-        return FriendResponse.from(savedFriend);
+        // ⚠️ 상대방의 친구 상태는 변경하지 않음 (상대방은 차단 사실 모름)
+
+        return FriendResponse.from(friend);
     }
 
     // 친구 차단 해제
@@ -181,19 +188,20 @@ public class FriendService {
         validateUserStatus(getUserByUserId(userId, true), true);
         validateUserStatus(getUserByUserId(friendId, false), false);
 
-        Friend friend = friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
+        Friend friend = friendRepository
+                .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
                 .orElseThrow(() -> new RuntimeException("차단된 친구 정보를 찾을 수 없습니다."));
 
         if (friend.getStatus() != Friend.Status.BLOCKED) {
             throw new RuntimeException("현재 차단 상태가 아닙니다.");
         }
 
-        friend.setStatus(Friend.Status.DEACTIVATED);
+        // 차단 해제 시 기존 친구 상태로 복원 (ACCEPTED)
+        friend.setStatus(Friend.Status.ACCEPTED);
         Friend updatedFriend = friendRepository.save(friend);
 
         return FriendResponse.from(updatedFriend);
     }
-
     
     // 친구 삭제
     @Transactional
