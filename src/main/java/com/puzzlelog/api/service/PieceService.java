@@ -52,35 +52,35 @@ public class PieceService {
     // 조각 추가 메서드 (완전한 형태)
     public PieceResponse addPiece(PieceRequest request, MultipartFile file, String authenticatedUserId) {
         
-        // 인증된 사용자가 본인이 맞는지 검증 (권한 체크)
-        if (!authenticatedUserId.equals(request.getUserId())) {
-            throw new RuntimeException("본인만 조각을 추가할 수 있습니다.");
-        }
+    	// 인증된 사용자가 본인이 맞는지 검증 (권한 체크)
+    	if (!authenticatedUserId.equals(request.getUserId())) {
+    	    throw new RuntimeException("본인만 조각을 추가할 수 있습니다.");
+    	}
 
-        if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
-            throw new RuntimeException("사용자 ID는 필수입니다.");
-        }
-        if (request.getType() == null) {
-            throw new RuntimeException("타입은 필수입니다.");
-        }
-        if (request.getType() == Piece.Type.TEXT && (request.getContent() == null || request.getContent().trim().isEmpty())) {
-            throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
-        }
+    	if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
+    	    throw new RuntimeException("사용자 ID는 필수입니다.");
+    	}
+    	if (request.getType() == null || request.getType().trim().isEmpty()) {
+    	    throw new RuntimeException("타입은 필수입니다.");
+    	}
+    	if ("TEXT".equals(request.getType()) && (request.getContent() == null || request.getContent().trim().isEmpty())) {
+    	    throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
+    	}
 
-        // 사용자 존재 여부 및 상태 체크 (추가된 부분)
-        User user = userRepository.findByUserId(request.getUserId())
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+    	// 사용자 존재 여부 및 상태 체크 (추가된 부분)
+    	User user = userRepository.findByUserId(request.getUserId())
+    	    .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        if (user.getStatus() == User.Status.BANNED) {
-            throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
-        }
-        if (user.getStatus() == User.Status.DELETED) {
-            throw new RuntimeException("존재하지 않는 사용자입니다.");
-        }
+    	if ("BANNED".equals(user.getStatus())) {
+    	    throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
+    	}
+    	if ("DELETED".equals(user.getStatus())) {
+    	    throw new RuntimeException("존재하지 않는 사용자입니다.");
+    	}
 
-        if (request.getType() != Piece.Type.TEXT && file == null) {
-            throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
-        }
+    	if (!"TEXT".equals(request.getType()) && file == null) {
+    	    throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
+    	}
 
         String mediaId = null;
         String publicId = null;
@@ -205,14 +205,14 @@ public class PieceService {
 
         Map<String, PieceUpdateResponse.UpdateField> updatedFields = new LinkedHashMap<>();
 
-        if (request.getType() != null && request.getType() != piece.getType()) {
-            updatedFields.put("type", new PieceUpdateResponse.UpdateField(piece.getType().name(), request.getType().name()));
+        if (request.getType() != null && !request.getType().equals(piece.getType())) {
+            updatedFields.put("type", new PieceUpdateResponse.UpdateField(piece.getType(), request.getType()));
 
             handleTypeChange(piece, request, file, updatedFields);
             piece.setType(request.getType());
         }
 
-        if (file != null && piece.getType() != Piece.Type.TEXT) {
+        if (file != null && !"TEXT".equals(piece.getType())) {
             replaceExistingFile(piece, file, updatedFields);
         }
 
@@ -235,7 +235,7 @@ public class PieceService {
                                   Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
         deleteExistingMediaIfExists(piece);
 
-        if (request.getType() == Piece.Type.TEXT) {
+        if ("TEXT".equals(request.getType())) {
             if (request.getContent() == null || request.getContent().trim().isEmpty()) {
                 throw new RuntimeException("TEXT 타입으로 변경 시 내용은 필수입니다.");
             }
@@ -266,11 +266,13 @@ public class PieceService {
     }
 
     private void updateAdditionalFields(Piece piece, PieceUpdateRequest request,
-                                        Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
-        if (request.getContent() != null && piece.getType() == Piece.Type.TEXT && !request.getContent().equals(piece.getContent())) {
-            updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
-            piece.setContent(request.getContent());
-        }
+            Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
+    	
+		if (request.getContent() != null && "TEXT".equals(piece.getType())
+			&& !request.getContent().equals(piece.getContent())) {
+			updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
+			piece.setContent(request.getContent());
+		}
 
         if (request.getTags() != null && !request.getTags().equals(piece.getTags())) {
             updatedFields.put("tags", new PieceUpdateResponse.UpdateField(piece.getTags(), request.getTags()));
@@ -290,7 +292,8 @@ public class PieceService {
 
     private void deleteExistingMediaIfExists(Piece piece) {
         if (piece.getMediaId() != null && piece.getPublicId() != null) {
-            String resourceType = (piece.getType() == Piece.Type.VIDEO || piece.getType() == Piece.Type.AUDIO) ? "video" : "image";
+            String type = piece.getType();
+            String resourceType = ("VIDEO".equals(type) || "AUDIO".equals(type)) ? "video" : "image";
             boolean deleted = cloudinaryService.deleteFromCloud(piece.getPublicId(), resourceType);
             if (!deleted) logger.warn("기존 파일이 이미 삭제되었거나 존재하지 않음. publicId: {}", piece.getPublicId());
         }

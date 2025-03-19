@@ -17,14 +17,14 @@ public class UserResponse {
     private String email;
     private String nickname;
     private LocalDate birthDate;
-    private User.Gender gender;
+    private String gender; // "MALE", "FEMALE"
     private Boolean isAlarm;
     private String profileImg;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private User.Status status;
+    private String status; // "ACTIVE", "DELETED", "BANNED"
     private LocalDateTime lastLogin;
-    private User.Role role;
+    private String role; // "USER", "ADMIN"
 
     // 엔티티에서 Response DTO로 변환
     public static UserResponse from(User user) {

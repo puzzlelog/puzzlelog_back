@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -58,9 +56,8 @@ public class User implements Serializable {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "gender")
-    private Gender gender;
+    @Column(name = "gender", length = 10)
+    private String gender; // "MALE", "FEMALE"
 
     @Column(name = "nickname", length = 50)
     private String nickname;
@@ -82,17 +79,15 @@ public class User implements Serializable {
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private Status status = Status.ACTIVE;
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE"; // "ACTIVE", "DELETED", "BANNED"
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role = Role.USER;
+    @Column(name = "role", length = 20)
+    private String role = "USER"; //  "USER", "ADMIN"
 
     @PrePersist
     protected void onCreate() {
@@ -100,24 +95,12 @@ public class User implements Serializable {
         updatedAt = LocalDateTime.now();
         
         if (isAlarm == null) isAlarm = true;
-        if (status == null) status = Status.ACTIVE;
-        if (role == null) role = Role.USER;
+        if (status == null) status = "ACTIVE";
+        if (role == null) role = "USER";
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public enum Gender {
-        MALE, FEMALE
-    }
-
-    public enum Status {
-        ACTIVE, DELETED, BANNED
-    }
-
-    public enum Role {
-        USER, ADMIN
     }
 }
