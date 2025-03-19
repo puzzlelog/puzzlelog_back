@@ -18,20 +18,20 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Document(collection = "posts")
-public class Post  {
-	@Id
-	private String id;
-	private String userId;
-	private String title;
-	private String content;
-	@CreatedDate
-	private LocalDateTime createdAt;
-	@Builder.Default
-	private boolean isLiked = false;
-	@Builder.Default
-	private int likesCount = 0;
-	@Builder.Default
-	private boolean isDeleted = false;
+public class Post {
+    @Id
+    private String id;
+    private String userId;
+    private String title;
+    private String content;
+    
+    @CreatedDate
+    private LocalDateTime createdAt;
 
-	
+    @Builder.Default
+    private boolean isLiked = false;
+    @Builder.Default
+    private int likesCount = 0;
+    @Builder.Default
+    private boolean isDeleted = false;
 }

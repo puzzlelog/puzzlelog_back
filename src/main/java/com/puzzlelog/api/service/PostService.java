@@ -1,5 +1,6 @@
 package com.puzzlelog.api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -22,8 +23,17 @@ public class PostService {
 
 	// 게시글 작성 기능
 	public Post createPost(String userId, String content, String title) {
-		Post post = new Post(userId, content, title, title, null, false, 0, false);
-		return postRepository.save(post); // MongoDB에 게시글 저장
+	    Post post = Post.builder()
+	        .userId(userId)
+	        .title(title)
+	        .content(content)
+	        .createdAt(LocalDateTime.now()) // 생성 시간 추가
+	        .likesCount(0)
+	        .isLiked(false)
+	        .isDeleted(false)
+	        .build();
+	    
+	    return postRepository.save(post);
 	}
 
 	// 모든 게시글 조회 (삭제되지 않은 게시글만)
