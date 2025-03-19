@@ -10,21 +10,28 @@ import java.util.List;
 @Builder
 // 임베디드 클래스 (DiaryLayer의 일부에 속하는 클래스, DiaryLayer를 참조하면 이 부분도 참조한다.)
 public class PieceDecoration {
-    // TEXT 스타일
-    private String font; // 글씨체 (웹 폰트 사용)
-    private Integer fontSize;
-    private String color;
-    private List<String> fontStyle; // [bold, italic ... ]
-    private String align;
+    
+    // 공통 스타일 요소 (IMAGE, VIDEO, TEXT 공통)
+    private String borderColor;      // 테두리 색상
+    private Double opacity;          // 투명도
+    private Double borderRadius;     // 둥근 모서리 (Round Corners)
 
-    // IMAGE, VIDEO 스타일 (+ 추가 존재)
-    private List<Object> crop;     // [width, height, x, y, gravity]
-    private List<String> effects;
-    private String borderColor;
-    private Double opacity;
+    // TEXT 스타일 요소 (TEXT 전용)
+    private String font;             // 글꼴
+    private Integer fontSize;        // 글씨 크기
+    private String color;            // 글씨 색상
+    private List<String> fontStyle;  // [bold, italic, underline...]
+    private String align;            // 정렬 (left, center, right)
 
-    // AUDIO 스타일 (+추가 존재)
-    private Double startOffset;
-    private Double endOffset;
-    private Integer volume;
+    // IMAGE, VIDEO 공통 스타일
+    private List<Object> crop;       // [width, height, x, y, gravity]
+
+    // AUDIO, VIDEO 공통 스타일
+    private Double startOffset;      // 재생 시작 위치 (Trimming)
+    private Double endOffset;        // 재생 끝 위치 (Trimming)
+    private Integer volume;          // 볼륨 크기 (%)
+
+    // 부가 효과 (외부 라이브러리 또는 AI 기반의 특수 효과)
+    private List<String> effects;    // ["blur", "background_removal", "background_replace", "recolor", "noise_reduction", "restore"]
+    
 }
