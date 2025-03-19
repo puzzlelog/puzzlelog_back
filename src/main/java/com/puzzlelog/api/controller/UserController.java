@@ -42,13 +42,12 @@ public class UserController {
         this.userService = userService;
     }
 
-    // 회원가입
+ // 회원가입 (Multipart 처리 추가)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<SignupResponse>> signup(
             @RequestPart("data") SignupRequest request,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-
         if (request.getUserId() == null || request.getUserId().isBlank()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.fail("아이디는 필수 입력값입니다."));
@@ -72,6 +71,7 @@ public class UserController {
         SignupResponse response = authService.registerUser(request, file);
         return ResponseEntity.ok(ApiResponse.success(response, "회원가입 성공"));
     }
+
 
     // 로그인 (관리자 체크)
     @PostMapping("/login")
