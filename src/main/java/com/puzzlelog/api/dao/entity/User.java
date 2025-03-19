@@ -109,6 +109,18 @@ public class User implements Serializable {
         updatedAt = LocalDateTime.now();
     }
 
+    
+    //==========================================================
+    // ENUM
+    //==========================================================
+    /**
+     * 
+     * @enum Gender : 성별
+     * @enum Status : 상태
+     * @enum Role : 역할
+     *
+     */
+    
     public enum Gender {
         MALE, FEMALE
     }

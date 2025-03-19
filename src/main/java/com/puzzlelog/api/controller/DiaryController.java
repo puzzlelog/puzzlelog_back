@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.config.ApiResponse;
+import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dto.request.diary.DiaryRequest;
 import com.puzzlelog.api.dto.response.diary.DiaryResponse;
 
@@ -14,13 +15,23 @@ import com.puzzlelog.api.dto.response.diary.DiaryResponse;
 @RequestMapping("/diaries")
 public class DiaryController {
 
-    // 일기 생성
-    @PostMapping
-    public ResponseEntity<ApiResponse<DiaryResponse>> createDiary(@RequestBody DiaryRequest request) {
-        // Service 구현 예정
-        return ResponseEntity.ok(ApiResponse.success(null, "일기 생성 성공"));
-    }
+	// 일기 생성 API
+//    @PostMapping
+//    public ResponseEntity<ApiResponse<DiaryResponse>> createDiary(
+//            @RequestBody DiaryRequest request) {
+//
+//        Diary diary = diaryService.createDiary(request);
+//        DiaryResponse response = DiaryResponse.from(diary);
+//
+//        return ResponseEntity.ok(ApiResponse.success(response, "일기 생성 성공"));
+//    }
 
+	
+	
+	
+	
+	
+	
 //    // 일기 목록 조회 (필터링 및 페이징 가능)
 //    @GetMapping
 //    public ResponseEntity<ApiResponse<PagedDiaryResponse>> getDiaries(
