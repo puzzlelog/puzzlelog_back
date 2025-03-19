@@ -34,7 +34,7 @@ public class PieceResponse {
         return PieceResponse.builder()
                 .id(piece.getId())
                 .userId(piece.getUserId())
-                .type(piece.getType().name())
+                .type(piece.getType())
                 .content(piece.getContent())
                 .tags(piece.getTags())
                 .location(piece.getLocation())

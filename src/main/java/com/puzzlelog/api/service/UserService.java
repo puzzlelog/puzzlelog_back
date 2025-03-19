@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import com.puzzlelog.api.dto.response.user.UserResponse;
 import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
 import com.puzzlelog.api.repository.mongo.UserHistoryRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
+import com.puzzlelog.api.repository.mysql.UserSpecifications;
 
 @Service
 public class UserService {
@@ -57,9 +60,10 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> findUsers(UserSearchRequest request, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        
-        return userRepository.searchUsers(request, pageable)
-                .map(UserResponse::from);
+
+        Specification<User> specs = UserSpecifications.withConditions(request);
+
+        return userRepository.findAll(specs, pageable).map(UserResponse::from);
     }
     
     // 사용자 정보 수정
@@ -71,63 +75,130 @@ public class UserService {
         Map<String, UserUpdateResponse.UpdateField> updatedFields = new HashMap<>();
         Map<String, Object> historyFields = new HashMap<>();
 
+        if ((request == null || request.isEmpty()) && (file == null || file.isEmpty())) {
+            throw new RuntimeException("수정된 내용이 없습니다.");
+        }
+
         if (request != null) {
-            if (request.getUserPwd() != null) {
+            if (request.hasUserPwd()) {
                 user.setUserPwd(passwordEncoder.encode(request.getUserPwd()));
                 updatedFields.put("userPwd", new UserUpdateResponse.UpdateField("(비밀번호 변경됨)", "(비밀번호 변경됨)"));
                 historyFields.put("userPwd", "(비밀번호 변경됨)");
             }
 
-            if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
-            	historyFields.put("nickname", Map.of("before", user.getNickname(), "after", request.getNickname()));
+            if (request.hasNickname() && !Objects.equals(request.getNickname(), user.getNickname())) {
+                Map<String, Object> nicknameHistory = new HashMap<>();
+                nicknameHistory.put("before", user.getNickname());
+                nicknameHistory.put("after", request.getNickname());
+
+                historyFields.put("nickname", nicknameHistory);
                 updatedFields.put("nickname", new UserUpdateResponse.UpdateField(user.getNickname(), request.getNickname()));
                 user.setNickname(request.getNickname());
             }
 
-            if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate().toString())) {
-            	historyFields.put("birthDate", Map.of("before", user.getBirthDate().toString(), "after", request.getBirthDate()));
-                updatedFields.put("birthDate", new UserUpdateResponse.UpdateField(user.getBirthDate().toString(), request.getBirthDate()));
-                user.setBirthDate(LocalDate.parse(request.getBirthDate()));
+            if (request.hasBirthDate()) {
+                String prevBirthDate = user.getBirthDate() != null ? user.getBirthDate().toString() : null;
+
+                if (!Objects.equals(request.getBirthDate(), prevBirthDate)) {
+                    Map<String, Object> birthDateHistory = new HashMap<>();
+                    birthDateHistory.put("before", prevBirthDate);
+                    birthDateHistory.put("after", request.getBirthDate());
+
+                    historyFields.put("birthDate", birthDateHistory);
+                    updatedFields.put("birthDate", new UserUpdateResponse.UpdateField(prevBirthDate, request.getBirthDate()));
+
+                    user.setBirthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null);
+                }
+            }
+            
+            if (request.hasGender()) {
+                String prevGender = user.getGender();
+
+                if (!Objects.equals(request.getGender(), prevGender)) {
+                    Map<String, Object> genderHistory = new HashMap<>();
+                    genderHistory.put("before", prevGender);
+                    genderHistory.put("after", request.getGender());
+
+                    historyFields.put("gender", genderHistory);
+                    updatedFields.put("gender", new UserUpdateResponse.UpdateField(prevGender, request.getGender()));
+
+                    user.setGender(request.getGender());
+                }
             }
 
-            if (request.getGender() != null && !request.getGender().equals(user.getGender().name())) {
-            	historyFields.put("gender", Map.of("before", user.getGender().name(), "after", request.getGender()));
-                updatedFields.put("gender", new UserUpdateResponse.UpdateField(user.getGender().name(), request.getGender()));
-                user.setGender(User.Gender.valueOf(request.getGender()));
-            }
+            if (request.hasIsAlarm() && !request.getIsAlarm().equals(user.getIsAlarm())) {
+                Map<String, Object> isAlarmHistory = new HashMap<>();
+                isAlarmHistory.put("before", user.getIsAlarm());
+                isAlarmHistory.put("after", request.getIsAlarm());
 
-            if (request.getIsAlarm() != null && !request.getIsAlarm().equals(user.getIsAlarm())) {
-            	historyFields.put("isAlarm", Map.of("before", user.getIsAlarm(), "after", request.getIsAlarm()));
+                historyFields.put("isAlarm", isAlarmHistory);
                 updatedFields.put("isAlarm", new UserUpdateResponse.UpdateField(user.getIsAlarm(), request.getIsAlarm()));
                 user.setIsAlarm(request.getIsAlarm());
             }
 
-            // 프로필 이미지 삭제 처리 (null로 설정 시)
-            if (request.getProfileImg() == null && user.getProfileImg() != null && (file == null || file.isEmpty())) {
+            if (request.hasProfileImg() && request.getProfileImg() == null && user.getProfileImg() != null && (file == null || file.isEmpty())) {
                 String publicId = "$profile_" + userId;
+                String prevProfileImg = user.getProfileImg();
+
                 try {
                     boolean deleted = cloudinaryService.deleteFromCloud(publicId, "image");
                     if (!deleted) {
                         logger.warn("프로필 이미지가 이미 삭제되었거나 존재하지 않습니다: {}", publicId);
                     }
-                    historyFields.put("profileImg", Map.of("before", user.getProfileImg(), "after", null));
-                    updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(user.getProfileImg(), null));
+
+                    Map<String, Object> profileImgHistory = new HashMap<>();
+                    profileImgHistory.put("before", prevProfileImg);
+                    profileImgHistory.put("after", null);
+
+                    historyFields.put("profileImg", profileImgHistory);
+                    updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(prevProfileImg, null));
+
                     user.setProfileImg(null);
                 } catch (Exception e) {
                     throw new RuntimeException("프로필 이미지 삭제 실패: " + e.getMessage(), e);
                 }
             }
+            
+            /**
+             * @Admin : 관리자 기능
+             */
+            
+            if (request.hasStatus() && !Objects.equals(request.getStatus(), user.getStatus())) {
+                Map<String, Object> statusHistory = new HashMap<>();
+                statusHistory.put("before", user.getStatus());
+                statusHistory.put("after", request.getStatus());
+
+                historyFields.put("status", statusHistory);
+                updatedFields.put("status", new UserUpdateResponse.UpdateField(user.getStatus(), request.getStatus()));
+                user.setStatus(request.getStatus());
+            }
+
+            if (request.hasRole() && !Objects.equals(request.getRole(), user.getRole())) {
+                Map<String, Object> roleHistory = new HashMap<>();
+                roleHistory.put("before", user.getRole());
+                roleHistory.put("after", request.getRole());
+
+                historyFields.put("role", roleHistory);
+                updatedFields.put("role", new UserUpdateResponse.UpdateField(user.getRole(), request.getRole()));
+                user.setRole(request.getRole());
+            }
         }
 
-        // 프로필 이미지 업로드 처리 (덮어쓰기이므로 이전/이후 구분 없이 바로 mediaId 반환)
         String mediaId = null;
         if (file != null && !file.isEmpty()) {
             String publicId = "$profile_" + userId;
+            String prevProfileImg = user.getProfileImg();
             try {
                 CloudinaryUploadResponse uploadResult = cloudinaryService.uploadImageToCloud(file, publicId);
-                mediaId = uploadResult.getUrl(); // 업로드된 URL
-                historyFields.put("profileImg", Map.of("before", user.getProfileImg(), "after", mediaId));
-                updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(user.getProfileImg(), mediaId));
+                mediaId = uploadResult.getUrl();
+
+                Map<String, Object> profileImgHistory = new HashMap<>();
+                profileImgHistory.put("before", prevProfileImg);
+                profileImgHistory.put("after", mediaId);
+
+                historyFields.put("profileImg", profileImgHistory);
+                updatedFields.put("profileImg", new UserUpdateResponse.UpdateField(prevProfileImg, mediaId));
+
                 user.setProfileImg(mediaId);
             } catch (Exception e) {
                 throw new RuntimeException("프로필 이미지 업로드 실패: " + e.getMessage(), e);
@@ -139,12 +210,11 @@ public class UserService {
         }
 
         userRepository.save(user);
-        
-        // MongoDB 기록 추가
+
         userHistoryRepository.save(UserHistory.builder()
             .userId(userId)
             .action("UPDATE")
-            .reason("본인 수정") // 관리자는 다른 메서드에서 처리
+            .reason("본인 수정")
             .changedBy(userId)
             .timestamp(LocalDateTime.now())
             .changedFields(historyFields)
@@ -153,9 +223,9 @@ public class UserService {
         return UserUpdateResponse.builder()
             .userId(user.getUserId())
             .updatedFields(updatedFields)
-            .mediaId(mediaId)  // 새로 추가된 필드, 프로필 이미지 URL 직접 반환
+            .mediaId(mediaId)
             .build();
-    }  
+    }
 
     // 사용자 비활성화 (상태를 DELETED로 변경)
     @Transactional
@@ -163,7 +233,9 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        user.setStatus(User.Status.DELETED);
+        String prevStatus = user.getStatus();
+
+        user.setStatus("DELETED");
         userRepository.save(user);
         
         // ✅ MongoDB 삭제 기록 추가
@@ -173,10 +245,10 @@ public class UserService {
             .reason("본인 삭제")
             .changedBy(userId)
             .timestamp(LocalDateTime.now())
-            .changedFields(Map.of("status", Map.of("before", "ACTIVE", "after", "DELETED")))
+            .changedFields(Map.of("status", Map.of("before", prevStatus, "after", "DELETED")))
             .build());
     }
-    
+ 
     // 중복 체크
     @Transactional(readOnly = true)
     public boolean checkDuplicate(String type, String value) {
