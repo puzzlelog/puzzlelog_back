@@ -73,13 +73,16 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(response, "회원가입 성공"));
     }
 
-    // 로그인
+    // 로그인 (관리자 체크)
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
-    	LoginResponse response = authService.validateUser(loginRequest);
+        LoginResponse response = authService.validateUser(loginRequest);
 
-    	if (response != null) {
-            return ResponseEntity.ok(ApiResponse.success(response, "로그인 성공"));
+        if (response != null) {
+            // 관리자 여부 확인
+            boolean isAdmin = authService.isAdmin(response.getUserId());
+            String message = isAdmin ? "관리자 로그인 성공" : "일반 사용자 로그인 성공";
+            return ResponseEntity.ok(ApiResponse.success(response, message));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.fail("아이디 또는 비밀번호가 잘못되었습니다."));

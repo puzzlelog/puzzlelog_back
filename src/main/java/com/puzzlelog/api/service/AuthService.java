@@ -86,4 +86,11 @@ public class AuthService { // 인증 기능
                         .build())
                 .orElse(null);
     }
+    
+    // 관리자 확인
+    public boolean isAdmin(String userId) {
+        return userRepository.findByUserId(userId)
+                .map(user -> user.getRole() == User.Role.ADMIN)
+                .orElse(false);
+    }
 }
