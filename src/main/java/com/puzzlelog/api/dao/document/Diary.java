@@ -34,7 +34,7 @@ public class Diary {
     private String backgroundContentId; // 이미지 Content Id, null 가능
 
     private String themeColor;
-    private String emotion;
+    private String emotion;  // 감정 상태 콘텐츠의 Content Id (null 가능)
 
     @Builder.Default
     private Boolean isShared = false;

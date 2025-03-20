@@ -1,22 +1,28 @@
 package com.puzzlelog.api.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.response.friend.FriendResponse;
 import com.puzzlelog.api.dto.response.friend.PagedFriendResponse;
 import com.puzzlelog.api.service.FriendService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/friends")
+@RequiredArgsConstructor
 public class FriendController {
 
     private final FriendService friendService;
-
-    public FriendController(FriendService friendService) {
-        this.friendService = friendService;
-    }
 
     // 친구 요청 보내기
     @PostMapping("/{userId}/friends/{friendId}")

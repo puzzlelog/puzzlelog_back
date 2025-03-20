@@ -27,16 +27,15 @@ import com.puzzlelog.api.dto.response.piece.PieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
 import com.puzzlelog.api.service.PieceService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/pieces")
+@RequiredArgsConstructor
 public class PieceController {
 
 	private final PieceService pieceService;
 	private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-
-    public PieceController(PieceService pieceService) {
-        this.pieceService = pieceService;
-    }
 	
     // 조각 파일 크기 체크
     @RequestMapping(method = RequestMethod.HEAD)

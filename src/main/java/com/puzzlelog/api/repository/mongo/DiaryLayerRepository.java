@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import com.puzzlelog.api.dao.document.DiaryLayer;
 
 @Repository
-public interface DiaryPieceRepository extends MongoRepository<DiaryLayer, ObjectId> {
+public interface DiaryLayerRepository extends MongoRepository<DiaryLayer, ObjectId> {
 	
 }

@@ -29,18 +29,15 @@ import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
 import com.puzzlelog.api.service.AuthService;
 import com.puzzlelog.api.service.UserService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/users")
+@RequiredArgsConstructor
 public class UserController {
 	
 	private final AuthService authService;
 	private final UserService userService;
-
-    // 생성자 주입
-    public UserController(AuthService authService, UserService userService) {
-        this.authService = authService;
-        this.userService = userService;
-    }
 
     // 회원가입
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

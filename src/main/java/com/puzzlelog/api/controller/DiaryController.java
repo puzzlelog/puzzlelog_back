@@ -1,5 +1,7 @@
 package com.puzzlelog.api.controller;
 
+import javax.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,27 +12,25 @@ import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dto.request.diary.DiaryRequest;
 import com.puzzlelog.api.dto.response.diary.DiaryResponse;
+import com.puzzlelog.api.service.DiaryService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/diaries")
+@RequiredArgsConstructor
 public class DiaryController {
 
-	// 일기 생성 API
-//    @PostMapping
-//    public ResponseEntity<ApiResponse<DiaryResponse>> createDiary(
-//            @RequestBody DiaryRequest request) {
-//
-//        Diary diary = diaryService.createDiary(request);
-//        DiaryResponse response = DiaryResponse.from(diary);
-//
-//        return ResponseEntity.ok(ApiResponse.success(response, "일기 생성 성공"));
-//    }
+	private final DiaryService diaryService;
 
-	
-	
-	
-	
-	
+	@PostMapping
+	public ResponseEntity<ApiResponse<DiaryResponse>> createDiary(
+	        @RequestBody @Valid DiaryRequest request) {
+	    DiaryResponse response = diaryService.createDiary(request);
+
+	    return ResponseEntity.ok(ApiResponse.success(response, "일기 생성 성공"));
+	}
+
 	
 //    // 일기 목록 조회 (필터링 및 페이징 가능)
 //    @GetMapping
