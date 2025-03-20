@@ -28,13 +28,13 @@ public class Diary {
     private String title;
     
     // 일기 내부 요소
-    private List<String> layerIds; // DiaryLayer 컬렉션의 ID 리스트 (레이어 순서대로 저장)
+    private List<String> elementIds; // DiaryElement 컬렉션의 ID 리스트 (요소 순서대로 저장)
     
     // 배경 설정
     private String backgroundContentId; // 이미지 Content Id, null 가능
 
     private String themeColor;
-    private String emotion;  // 감정 상태 콘텐츠의 Content Id (null 가능)
+    private String emotionContentId;  // 감정 상태 콘텐츠의 Content Id (null 가능)
 
     @Builder.Default
     private Boolean isShared = false;

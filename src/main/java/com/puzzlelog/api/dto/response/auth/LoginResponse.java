@@ -9,5 +9,6 @@ import lombok.*;
 @Builder
 public class LoginResponse {
     private String userId;
+    private String role;
     private String token; // JWT 등 인증 토큰
 }

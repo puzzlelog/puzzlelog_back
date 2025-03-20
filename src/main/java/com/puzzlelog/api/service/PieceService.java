@@ -50,13 +50,8 @@ public class PieceService {
     }
 
     // 조각 추가 메서드 (완전한 형태)
-    public PieceResponse addPiece(PieceRequest request, MultipartFile file, String authenticatedUserId) {
-        
-        // 인증된 사용자가 본인이 맞는지 검증 (권한 체크)
-        if (!authenticatedUserId.equals(request.getUserId())) {
-            throw new RuntimeException("본인만 조각을 추가할 수 있습니다.");
-        }
-
+    public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
+    	
         if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
             throw new RuntimeException("사용자 ID는 필수입니다.");
         }

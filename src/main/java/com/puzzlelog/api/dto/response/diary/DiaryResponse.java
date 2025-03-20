@@ -19,7 +19,7 @@ import lombok.Setter;
 public class DiaryResponse {
     private String diaryId;
     private String title;
-    private List<String> layerIds;
+    private List<String> elementIds;
     private Instant createdAt;
     private Instant openAt; // 타임캡슐 오픈 날짜 (일반 일기인 경우 null)
 
@@ -27,9 +27,9 @@ public class DiaryResponse {
         return DiaryResponse.builder()
                 .diaryId(diary.getId())
                 .title(diary.getTitle())
-                .layerIds(diary.getLayerIds())
+                .elementIds(diary.getElementIds())
                 .createdAt(diary.getCreatedAt())
-                .openAt(diary.getOpenAt())  // 추가
+                .openAt(diary.getOpenAt())
                 .build();
     }
 }

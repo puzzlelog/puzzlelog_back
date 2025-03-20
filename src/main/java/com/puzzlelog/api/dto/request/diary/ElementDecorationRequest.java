@@ -8,7 +8,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PieceDecorationRequest {
+public class ElementDecorationRequest {
     // TEXT 스타일
     private String font;
     private Integer fontSize;
