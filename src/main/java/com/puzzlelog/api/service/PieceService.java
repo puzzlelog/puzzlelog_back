@@ -2,7 +2,6 @@ package com.puzzlelog.api.service;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +27,14 @@ import com.puzzlelog.api.dto.response.piece.PagedPieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceDeleteResponse;
 import com.puzzlelog.api.dto.response.piece.PieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
+import com.puzzlelog.api.repository.listsearch.PieceListSearch;
 import com.puzzlelog.api.repository.mongo.PieceRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class PieceService {
 
 	private static final Logger logger = LoggerFactory.getLogger(PieceService.class);
@@ -40,25 +43,20 @@ public class PieceService {
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
     private final CloudinaryService cloudinaryService;
-
-    public PieceService(PieceRepository pieceRepository, UserRepository userRepository, 
-    		MongoTemplate mongoTemplate, CloudinaryService cloudinaryService) {
-        this.pieceRepository = pieceRepository;
-        this.userRepository = userRepository;
-        this.mongoTemplate = mongoTemplate;
-        this.cloudinaryService = cloudinaryService;
-    }
+    private final PieceListSearch pieceListSearch;
 
     // 조각 추가 메서드 (완전한 형태)
     public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
-    	
+        
         if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
             throw new RuntimeException("사용자 ID는 필수입니다.");
         }
-        if (request.getType() == null) {
+        
+        if (request.getType() == null || request.getType().trim().isEmpty()) {
             throw new RuntimeException("타입은 필수입니다.");
         }
-        if (request.getType() == Piece.Type.TEXT && (request.getContent() == null || request.getContent().trim().isEmpty())) {
+        
+        if ("TEXT".equals(request.getType()) && (request.getContent() == null || request.getContent().trim().isEmpty())) {
             throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
         }
 
@@ -66,16 +64,17 @@ public class PieceService {
         User user = userRepository.findByUserId(request.getUserId())
             .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        if (user.getStatus() == User.Status.BANNED) {
+        if ("BANNED".equals(user.getStatus())) {
             throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
         }
-        if (user.getStatus() == User.Status.DELETED) {
+        
+        if ("DELETED".equals(user.getStatus())) {
             throw new RuntimeException("존재하지 않는 사용자입니다.");
         }
 
-        if (!"TEXT".equals(request.getType()) && file == null) {
-    	    throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
-    	}
+        if (!"TEXT".equals(request.getType()) && (file == null || file.isEmpty())) {
+            throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
+        }
 
         String mediaId = null;
         String publicId = null;
@@ -142,49 +141,9 @@ public class PieceService {
     // 목록 조회 메서드 (페이징 포함)
     @Transactional(readOnly = true)
     public PagedPieceResponse searchPieces(PieceSearchRequest request, int page, int size) {
-        request.applyDateFilters();
-
-        Criteria criteria = new Criteria();
-
-        if (request.getUserId() != null && !request.getUserId().trim().isEmpty()) {
-            criteria.and("userId").is(request.getUserId());
-        }
-
-        if (request.getType() != null) {
-            criteria.and("type").is(request.getType());
-        }
-
-        if (request.getContent() != null) {
-            criteria.and("content").regex(".*" + request.getContent() + ".*", "i");
-        }
-
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            criteria.and("tags").in(request.getTags());
-        }
-
-        if (request.getIsPrivate() != null) {
-            criteria.and("isPrivate").is(request.getIsPrivate());
-        }
-
-        if (request.getIsDeleted() != null) {
-            criteria.and("isDeleted").is(request.getIsDeleted());
-        }
-
-        // 날짜 필터 처리 (LocalDate → Instant 변환 명확히)
-        if (request.getCreatedAtFrom() != null || request.getCreatedAtTo() != null) {
-            Instant fromInstant = request.getCreatedAtFrom() != null
-                ? request.getCreatedAtFrom().atStartOfDay(ZoneOffset.UTC).toInstant()
-                : Instant.ofEpochSecond(0);
-
-            Instant toInstant = request.getCreatedAtTo() != null
-                ? request.getCreatedAtTo().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
-                : Instant.now();
-
-            criteria.and("createdAt").gte(fromInstant).lt(toInstant);
-        }
-
+        Criteria criteria = pieceListSearch.buildSearch(request);
         Query query = new Query(criteria)
-            .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+                        .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
 
         List<Piece> pieces = mongoTemplate.find(query, Piece.class);
         long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Piece.class);
@@ -307,11 +266,11 @@ public class PieceService {
     @Transactional
     public PieceDeleteResponse deletePiece(String pieceId) {
         Piece piece = pieceRepository.findById(pieceId)
-            .orElseThrow(() -> new RuntimeException("조각을 찾을 수 없습니다."));
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 조각입니다."));
 
         // 이미 삭제된 경우 처리
         if (piece.getIsDeleted()) {
-            throw new RuntimeException("이미 삭제된 조각입니다.");
+            throw new RuntimeException("존재하지 않는 조각입니다.");
         }
 
         piece.setIsDeleted(true);  // 삭제 처리

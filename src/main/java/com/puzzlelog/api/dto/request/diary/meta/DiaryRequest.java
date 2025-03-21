@@ -1,10 +1,12 @@
-package com.puzzlelog.api.dto.request.diary;
+package com.puzzlelog.api.dto.request.diary.meta;
 
 import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
+
+import com.puzzlelog.api.dto.request.diary.element.DiaryElementRequest;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

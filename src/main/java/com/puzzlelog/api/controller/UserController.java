@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
 import com.puzzlelog.api.dto.request.auth.SignupRequest;
 import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.auth.LoginResponse;
 import com.puzzlelog.api.dto.response.auth.SignupResponse;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
 import com.puzzlelog.api.dto.response.user.PagedUserResponse;
 import com.puzzlelog.api.dto.response.user.UserResponse;
 import com.puzzlelog.api.dto.response.user.UserUpdateResponse;

@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response.diary;
+package com.puzzlelog.api.dto.response.diary.element;
 
 import lombok.Builder;
 

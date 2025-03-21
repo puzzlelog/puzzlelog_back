@@ -1,8 +1,12 @@
-package com.puzzlelog.api.dto.response.diary;
+package com.puzzlelog.api.dto.response.diary.meta;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.puzzlelog.api.dao.document.Diary;
+import com.puzzlelog.api.dao.document.DiaryElement;
+import com.puzzlelog.api.dto.response.diary.element.DiaryElementResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +19,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DiarySimpleResponse {
+public class DiaryDetailResponse {
     private String diaryId;
     private String userId;
     private String title;
@@ -23,12 +27,14 @@ public class DiarySimpleResponse {
     private String themeColor;
     private String emotionContentId;
     private Boolean isShared;
-    private Instant openAt;
+    private Instant openAt;  // 타임캡슐 여부 (없으면 null)
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static DiarySimpleResponse from(Diary diary) {
-        return DiarySimpleResponse.builder()
+    private List<DiaryElementResponse> elements;  // 요소 상세 정보 리스트
+    
+    public static DiaryDetailResponse from(Diary diary, List<DiaryElement> elements) {
+        return DiaryDetailResponse.builder()
             .diaryId(diary.getId())
             .userId(diary.getUserId())
             .title(diary.getTitle())
@@ -36,9 +42,12 @@ public class DiarySimpleResponse {
             .themeColor(diary.getThemeColor())
             .emotionContentId(diary.getEmotionContentId())
             .isShared(diary.getIsShared())
-            .openAt(diary.getOpenAt())
             .createdAt(diary.getCreatedAt())
             .updatedAt(diary.getUpdatedAt())
+            .openAt(diary.getOpenAt())
+            .elements(elements.stream()
+                .map(DiaryElementResponse::from)
+                .collect(Collectors.toList()))
             .build();
     }
 }

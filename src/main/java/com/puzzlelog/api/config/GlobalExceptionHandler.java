@@ -10,6 +10,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

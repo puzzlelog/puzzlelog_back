@@ -27,8 +27,10 @@ public class Diary {
     private String userId;
     private String title;
     
-    // 일기 내부 요소
-    private List<String> elementIds; // DiaryElement 컬렉션의 ID 리스트 (요소 순서대로 저장)
+    /** 일기 내부에 존재하는 요소(Element)
+     * 우선 순위가 존재하여 뒤에 있을 수록 위에 존재한다.
+     */
+    private List<String> elementIds; // DiaryElement 컬렉션의 ID 리스트
     
     // 배경 설정
     private String backgroundContentId; // 이미지 Content Id, null 가능

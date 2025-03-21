@@ -1,7 +1,7 @@
 package com.puzzlelog.api.controller;
 
-import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dao.document.Sticker;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
 import com.puzzlelog.api.service.AuthService;
 import com.puzzlelog.api.service.StickerService;
 import org.springframework.beans.factory.annotation.Autowired;

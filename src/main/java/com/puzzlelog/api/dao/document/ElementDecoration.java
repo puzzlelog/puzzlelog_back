@@ -1,7 +1,14 @@
 package com.puzzlelog.api.dao.document;
 
-import lombok.*;
 import java.util.List;
+
+import com.puzzlelog.api.dto.request.diary.element.ElementDecorationRequest;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -33,4 +40,25 @@ public class ElementDecoration {
 
     // 부가 효과 (외부 라이브러리 또는 AI 기반 특수 효과)
     private List<String> effects;    // ["blur", "background_removal", "recolor"...]
+    
+    public static ElementDecoration from(ElementDecorationRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return ElementDecoration.builder()
+            .borderColor(request.getBorderColor())
+            .opacity(request.getOpacity())
+            .font(request.getFont())
+            .fontSize(request.getFontSize())
+            .color(request.getColor())
+            .fontStyle(request.getFontStyle())
+            .align(request.getAlign())
+            .crop(request.getCrop())
+            .startOffset(request.getStartOffset())
+            .endOffset(request.getEndOffset())
+            .volume(request.getVolume())
+            .effects(request.getEffects())
+            .build();
+    }
 }

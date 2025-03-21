@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response.diary;
+package com.puzzlelog.api.dto.response.diary.element;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,14 +17,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class DiaryElementResponse {
-    private String elementId;
+    private String id;
     private String elementType;
     private String contentId; 
     private String drawingData;
     private List<Double> position;
     private Double scale;
     private Double rotation;
-    private Integer elementOrder;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -32,14 +31,13 @@ public class DiaryElementResponse {
     
     public static DiaryElementResponse from(DiaryElement element) {
         return DiaryElementResponse.builder()
-            .elementId(element.getElementId())
+            .id(element.getId())
             .elementType(element.getElementType())
             .contentId(element.getContentId())
             .drawingData(element.getDrawingData())
             .position(element.getPosition())
             .scale(element.getScale())
             .rotation(element.getRotation())
-            .elementOrder(element.getElementOrder())
             .createdAt(element.getCreatedAt())
             .updatedAt(element.getUpdatedAt())
             .decoration(null) // 현재는 null (추후 구현 예정)

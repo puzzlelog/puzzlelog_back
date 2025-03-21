@@ -4,8 +4,10 @@ import javax.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,12 +15,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.puzzlelog.api.config.ApiResponse;
-import com.puzzlelog.api.dto.request.diary.DiaryRequest;
-import com.puzzlelog.api.dto.request.diary.DiarySearchRequest;
-import com.puzzlelog.api.dto.response.diary.DiaryDetailResponse;
-import com.puzzlelog.api.dto.response.diary.DiaryResponse;
-import com.puzzlelog.api.dto.response.diary.PagedDiaryResponse;
+import com.puzzlelog.api.dto.request.diary.element.DiaryElementsOrderUpdateRequest;
+import com.puzzlelog.api.dto.request.diary.meta.DiaryMetaUpdateRequest;
+import com.puzzlelog.api.dto.request.diary.meta.DiaryRequest;
+import com.puzzlelog.api.dto.request.diary.meta.DiarySearchRequest;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
+import com.puzzlelog.api.dto.response.diary.element.DiaryElementsOrderResponse;
+import com.puzzlelog.api.dto.response.diary.meta.DiaryDeleteResponse;
+import com.puzzlelog.api.dto.response.diary.meta.DiaryDetailResponse;
+import com.puzzlelog.api.dto.response.diary.meta.DiaryMetaUpdateResponse;
+import com.puzzlelog.api.dto.response.diary.meta.DiaryResponse;
+import com.puzzlelog.api.dto.response.diary.meta.PagedDiaryResponse;
 import com.puzzlelog.api.service.DiaryService;
 
 import lombok.RequiredArgsConstructor;
@@ -58,20 +65,30 @@ public class DiaryController {
 	    return ResponseEntity.ok(ApiResponse.success(response, "일기 목록 조회 성공"));
 	}
 	
-//    // 특정 일기 수정
-//    @PatchMapping("/{diaryId}")
-//    public ResponseEntity<ApiResponse<DiaryResponse>> updateDiary(
-//            @PathVariable String diaryId,
-//            @RequestBody DiaryUpdateRequest request) {
-//
-//        // Service 구현 예정
-//        return ResponseEntity.ok(ApiResponse.success(null, "일기 수정 성공"));
-//    }
-//
-//    // 특정 일기 삭제 (논리 삭제)
-//    @DeleteMapping("/{diaryId}")
-//    public ResponseEntity<ApiResponse<Void>> deleteDiary(@PathVariable String diaryId) {
-//        // Service 구현 예정
-//        return ResponseEntity.ok(ApiResponse.successMessage("일기 삭제 성공"));
-//    }
+	// 특정 일기 메타 정보 수정
+	@PatchMapping("/{diaryId}/meta")
+	public ResponseEntity<ApiResponse<DiaryMetaUpdateResponse>> updateDiaryMeta(
+	        @PathVariable String diaryId,
+	        @RequestBody DiaryMetaUpdateRequest request) {
+
+	    DiaryMetaUpdateResponse response = diaryService.updateDiaryMeta(diaryId, request);
+	    return ResponseEntity.ok(ApiResponse.success(response, "일기 메타 정보 수정 성공"));
+	}
+	
+	// 일기 요소 순서 변경
+	@PatchMapping("/{diaryId}/elements-orders")
+	public ResponseEntity<ApiResponse<DiaryElementsOrderResponse>> updateDiaryElements(
+	        @PathVariable String diaryId,
+	        @RequestBody DiaryElementsOrderUpdateRequest request) {
+
+	    DiaryElementsOrderResponse response = diaryService.updateDiaryElements(diaryId, request);
+	    return ResponseEntity.ok(ApiResponse.success(response, "일기 요소 순서 수정 성공"));
+	}
+	
+	// 특정 일기 삭제 (논리 삭제)
+	@DeleteMapping("/{diaryId}")
+	public ResponseEntity<ApiResponse<DiaryDeleteResponse>> deleteDiary(@PathVariable String diaryId) {
+	    DiaryDeleteResponse response = diaryService.deleteDiary(diaryId);
+	    return ResponseEntity.ok(ApiResponse.success(response, "일기 삭제 성공"));
+	}
 }

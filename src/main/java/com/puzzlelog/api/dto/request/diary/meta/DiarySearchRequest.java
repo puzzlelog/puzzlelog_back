@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.request.diary;
+package com.puzzlelog.api.dto.request.diary.meta;
 
 import java.time.LocalDate;
 
