@@ -1,12 +1,35 @@
 package com.puzzlelog.api.dto.response.diary;
 
-import lombok.*;
+import java.time.Instant;
+import java.util.List;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+import com.puzzlelog.api.dao.document.Diary;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DiaryResponse {
-    private String id;
-    private Integer userId;
+    private String diaryId;
     private String title;
-    // 나머지 필드들은 일단 생략
+    private List<String> elementIds;
+    private Instant createdAt;
+    private Instant openAt; // 타임캡슐 오픈 날짜 (일반 일기인 경우 null)
+
+    public static DiaryResponse from(Diary diary) {
+        return DiaryResponse.builder()
+                .diaryId(diary.getId())
+                .title(diary.getTitle())
+                .elementIds(diary.getElementIds())
+                .createdAt(diary.getCreatedAt())
+                .openAt(diary.getOpenAt())
+                .build();
+    }
 }

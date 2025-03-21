@@ -50,35 +50,30 @@ public class PieceService {
     }
 
     // 조각 추가 메서드 (완전한 형태)
-    public PieceResponse addPiece(PieceRequest request, MultipartFile file, String authenticatedUserId) {
-        
-    	// 인증된 사용자가 본인이 맞는지 검증 (권한 체크)
-    	if (!authenticatedUserId.equals(request.getUserId())) {
-    	    throw new RuntimeException("본인만 조각을 추가할 수 있습니다.");
-    	}
+    public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
+    	
+        if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
+            throw new RuntimeException("사용자 ID는 필수입니다.");
+        }
+        if (request.getType() == null) {
+            throw new RuntimeException("타입은 필수입니다.");
+        }
+        if (request.getType() == Piece.Type.TEXT && (request.getContent() == null || request.getContent().trim().isEmpty())) {
+            throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
+        }
 
-    	if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
-    	    throw new RuntimeException("사용자 ID는 필수입니다.");
-    	}
-    	if (request.getType() == null || request.getType().trim().isEmpty()) {
-    	    throw new RuntimeException("타입은 필수입니다.");
-    	}
-    	if ("TEXT".equals(request.getType()) && (request.getContent() == null || request.getContent().trim().isEmpty())) {
-    	    throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
-    	}
+        // 사용자 존재 여부 및 상태 체크 (추가된 부분)
+        User user = userRepository.findByUserId(request.getUserId())
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-    	// 사용자 존재 여부 및 상태 체크 (추가된 부분)
-    	User user = userRepository.findByUserId(request.getUserId())
-    	    .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+        if (user.getStatus() == User.Status.BANNED) {
+            throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
+        }
+        if (user.getStatus() == User.Status.DELETED) {
+            throw new RuntimeException("존재하지 않는 사용자입니다.");
+        }
 
-    	if ("BANNED".equals(user.getStatus())) {
-    	    throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
-    	}
-    	if ("DELETED".equals(user.getStatus())) {
-    	    throw new RuntimeException("존재하지 않는 사용자입니다.");
-    	}
-
-    	if (!"TEXT".equals(request.getType()) && file == null) {
+        if (!"TEXT".equals(request.getType()) && file == null) {
     	    throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
     	}
 

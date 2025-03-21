@@ -27,16 +27,15 @@ import com.puzzlelog.api.dto.response.piece.PieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
 import com.puzzlelog.api.service.PieceService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/pieces")
+@RequiredArgsConstructor
 public class PieceController {
 
 	private final PieceService pieceService;
 	private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-
-    public PieceController(PieceService pieceService) {
-        this.pieceService = pieceService;
-    }
 	
     // 조각 파일 크기 체크
     @RequestMapping(method = RequestMethod.HEAD)
@@ -69,7 +68,7 @@ public class PieceController {
         System.out.println("✅ 파일: " + (file != null ? file.getOriginalFilename() : "파일 없음"));
 
         // 서비스 호출 시 request에서 받은 userId를 직접 전달
-        PieceResponse response = pieceService.addPiece(request, file, request.getUserId());
+        PieceResponse response = pieceService.addPiece(request, file);
 
         return ResponseEntity.ok(ApiResponse.success(response, "조각이 생성되었습니다."));
     }
