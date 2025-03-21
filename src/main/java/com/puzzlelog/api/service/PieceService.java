@@ -49,16 +49,18 @@ public class PieceService {
         this.cloudinaryService = cloudinaryService;
     }
 
-    // 조각 추가 메서드 (완전한 형태)
+ // 조각 추가 메서드 (완전한 형태)
     public PieceResponse addPiece(PieceRequest request, MultipartFile file) {
-    	
+        
         if (request.getUserId() == null || request.getUserId().trim().isEmpty()) {
             throw new RuntimeException("사용자 ID는 필수입니다.");
         }
-        if (request.getType() == null) {
+        
+        if (request.getType() == null || request.getType().trim().isEmpty()) {
             throw new RuntimeException("타입은 필수입니다.");
         }
-        if (request.getType() == Piece.Type.TEXT && (request.getContent() == null || request.getContent().trim().isEmpty())) {
+        
+        if ("TEXT".equals(request.getType()) && (request.getContent() == null || request.getContent().trim().isEmpty())) {
             throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
         }
 
@@ -66,16 +68,17 @@ public class PieceService {
         User user = userRepository.findByUserId(request.getUserId())
             .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        if (user.getStatus() == User.Status.BANNED) {
+        if ("BANNED".equals(user.getStatus())) {
             throw new RuntimeException("차단된 사용자는 조각을 추가할 수 없습니다.");
         }
-        if (user.getStatus() == User.Status.DELETED) {
+        
+        if ("DELETED".equals(user.getStatus())) {
             throw new RuntimeException("존재하지 않는 사용자입니다.");
         }
 
-        if (!"TEXT".equals(request.getType()) && file == null) {
-    	    throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
-    	}
+        if (!"TEXT".equals(request.getType()) && (file == null || file.isEmpty())) {
+            throw new RuntimeException("TEXT 이외의 타입은 파일이 반드시 포함되어야 합니다.");
+        }
 
         String mediaId = null;
         String publicId = null;
