@@ -8,7 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class LoginResponse {
+    private Integer id; 
     private String userId;
     private String role;
-    private String token; // JWT 등 인증 토큰
+    private String token;
 }

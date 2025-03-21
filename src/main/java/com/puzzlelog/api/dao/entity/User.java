@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -45,7 +47,7 @@ public class User implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer id; // DB: INT
 
     @Column(name = "user_id", nullable = false, length = 50)
     private String userId;
@@ -57,7 +59,8 @@ public class User implements Serializable {
     private LocalDate birthDate;
 
     @Column(name = "gender", length = 10)
-    private String gender; // "MALE", "FEMALE"
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "nickname", length = 50)
     private String nickname;
@@ -80,14 +83,16 @@ public class User implements Serializable {
 
     @Builder.Default
     @Column(name = "status", length = 20)
-    private String status = "ACTIVE"; // "ACTIVE", "DELETED", "BANNED"
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.ACTIVE;
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
     @Builder.Default
     @Column(name = "role", length = 20)
-    private String role = "USER"; //  "USER", "ADMIN"
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.USER;
 
     @PrePersist
     protected void onCreate() {
@@ -95,12 +100,24 @@ public class User implements Serializable {
         updatedAt = LocalDateTime.now();
         
         if (isAlarm == null) isAlarm = true;
-        if (status == null) status = "ACTIVE";
-        if (role == null) role = "USER";
+        if (status == null) status = Status.ACTIVE;
+        if (role == null) role = Role.USER;
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public enum Gender {
+        MALE, FEMALE
+    }
+
+    public enum Status {
+        ACTIVE, DELETED, BANNED
+    }
+
+    public enum Role {
+        USER, ADMIN
     }
 }

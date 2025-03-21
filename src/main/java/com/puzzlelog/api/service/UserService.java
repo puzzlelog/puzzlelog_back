@@ -20,6 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.UserHistory;
 import com.puzzlelog.api.dao.entity.User;
+import com.puzzlelog.api.dao.entity.User.Gender;
+import com.puzzlelog.api.dao.entity.User.Status;
+import com.puzzlelog.api.dao.entity.User.Role;
 import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
@@ -60,9 +63,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> findUsers(UserSearchRequest request, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
         Specification<User> specs = UserSpecifications.withConditions(request);
-
         return userRepository.findAll(specs, pageable).map(UserResponse::from);
     }
     
@@ -112,17 +113,19 @@ public class UserService {
             }
             
             if (request.hasGender()) {
-                String prevGender = user.getGender();
+                Gender prevGender = user.getGender();
+                String prevGenderStr = prevGender != null ? prevGender.name() : null;
+                String newGenderStr = request.getGender();
 
-                if (!Objects.equals(request.getGender(), prevGender)) {
+                if (!Objects.equals(newGenderStr, prevGenderStr)) {
                     Map<String, Object> genderHistory = new HashMap<>();
-                    genderHistory.put("before", prevGender);
-                    genderHistory.put("after", request.getGender());
+                    genderHistory.put("before", prevGenderStr);
+                    genderHistory.put("after", newGenderStr);
 
                     historyFields.put("gender", genderHistory);
-                    updatedFields.put("gender", new UserUpdateResponse.UpdateField(prevGender, request.getGender()));
+                    updatedFields.put("gender", new UserUpdateResponse.UpdateField(prevGenderStr, newGenderStr));
 
-                    user.setGender(request.getGender());
+                    user.setGender(newGenderStr != null ? Gender.valueOf(newGenderStr) : null);
                 }
             }
 
@@ -163,24 +166,36 @@ public class UserService {
              * @Admin : 관리자 기능
              */
             
-            if (request.hasStatus() && !Objects.equals(request.getStatus(), user.getStatus())) {
-                Map<String, Object> statusHistory = new HashMap<>();
-                statusHistory.put("before", user.getStatus());
-                statusHistory.put("after", request.getStatus());
+            if (request.hasStatus()) {
+                Status prevStatus = user.getStatus();
+                String prevStatusStr = prevStatus != null ? prevStatus.name() : null;
+                String newStatusStr = request.getStatus();
 
-                historyFields.put("status", statusHistory);
-                updatedFields.put("status", new UserUpdateResponse.UpdateField(user.getStatus(), request.getStatus()));
-                user.setStatus(request.getStatus());
+                if (!Objects.equals(newStatusStr, prevStatusStr)) {
+                    Map<String, Object> statusHistory = new HashMap<>();
+                    statusHistory.put("before", prevStatusStr);
+                    statusHistory.put("after", newStatusStr);
+
+                    historyFields.put("status", statusHistory);
+                    updatedFields.put("status", new UserUpdateResponse.UpdateField(prevStatusStr, newStatusStr));
+                    user.setStatus(newStatusStr != null ? Status.valueOf(newStatusStr) : null);
+                }
             }
 
-            if (request.hasRole() && !Objects.equals(request.getRole(), user.getRole())) {
-                Map<String, Object> roleHistory = new HashMap<>();
-                roleHistory.put("before", user.getRole());
-                roleHistory.put("after", request.getRole());
+            if (request.hasRole()) {
+                Role prevRole = user.getRole();
+                String prevRoleStr = prevRole != null ? prevRole.name() : null;
+                String newRoleStr = request.getRole();
 
-                historyFields.put("role", roleHistory);
-                updatedFields.put("role", new UserUpdateResponse.UpdateField(user.getRole(), request.getRole()));
-                user.setRole(request.getRole());
+                if (!Objects.equals(newRoleStr, prevRoleStr)) {
+                    Map<String, Object> roleHistory = new HashMap<>();
+                    roleHistory.put("before", prevRoleStr);
+                    roleHistory.put("after", newRoleStr);
+
+                    historyFields.put("role", roleHistory);
+                    updatedFields.put("role", new UserUpdateResponse.UpdateField(prevRoleStr, newRoleStr));
+                    user.setRole(newRoleStr != null ? Role.valueOf(newRoleStr) : null);
+                }
             }
         }
 
@@ -233,9 +248,9 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        String prevStatus = user.getStatus();
+        Status prevStatus = user.getStatus();
 
-        user.setStatus("DELETED");
+        user.setStatus(Status.DELETED);
         userRepository.save(user);
         
         // ✅ MongoDB 삭제 기록 추가
@@ -245,7 +260,7 @@ public class UserService {
             .reason("본인 삭제")
             .changedBy(userId)
             .timestamp(LocalDateTime.now())
-            .changedFields(Map.of("status", Map.of("before", prevStatus, "after", "DELETED")))
+            .changedFields(Map.of("status", Map.of("before", prevStatus != null ? prevStatus.name() : null, "after", Status.DELETED.name())))
             .build());
     }
  

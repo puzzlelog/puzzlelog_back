@@ -1,7 +1,6 @@
 package com.puzzlelog.api.config;
 
 import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,13 +11,24 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+// JwtAuthenticationFilter 클래스를 import 합니다.
+import com.puzzlelog.api.config.JwtAuthenticationFilter;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    // 생성자 주입 (생성자 없이 @Autowired로도 가능)
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -27,7 +37,9 @@ public class SecurityConfig {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**", "/images/**", "/**/*.ico", "/**/*.png");
+        return (web) -> web.ignoring().antMatchers(
+                "/resources/**", "/static/**", "/css/**", "/js/**", "/images/**", "/**/*.ico", "/**/*.png"
+        );
     }
 
     @Bean
@@ -39,17 +51,24 @@ public class SecurityConfig {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
+                // Preflight 요청(OPTIONS) 허용
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .antMatchers("/**").permitAll()
+                // 회원가입, 로그인은 모두 허용
+                .antMatchers(HttpMethod.POST, "/users").permitAll()
+                .antMatchers(HttpMethod.POST, "/users/login").permitAll()
+                // 스티커 관련 API (관리자 전용)
+                .antMatchers("/api/admin/stickers/**").hasRole("ADMIN")
+                // 그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated();
-        
-        	// Spring Security가 OPTIONS 요청을 직접 차단하지 않게 명확히 추가
-        	http.headers().frameOptions().sameOrigin();
+
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.headers().frameOptions().sameOrigin();
 
         return http.build();
     }
 
-    // 🔑 이 메서드를 추가해야 합니다.
+
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -58,7 +77,7 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://puzzlelog.me",
             "https://puzzlelog.me",
-            "null" // 임시 방편 (form submit - HTML, form 자체는 자기 자신에게 보내는 것 - Axios나 fetch API 추천)
+            "null"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
