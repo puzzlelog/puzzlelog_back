@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
-import com.puzzlelog.api.dao.document.Piece.Type;
-
 import lombok.*;
 
 @Getter
@@ -16,7 +14,7 @@ import lombok.*;
 @Builder
 public class PieceSearchRequest {
     private String userId;
-    private Type type;
+    private String type;  // TEXT, IMAGE, VIDEO, AUDIO
     private String content;          // LIKE 검색을 위한 키워드
     private List<String> tags;       // 태그 검색 (태그 중 하나라도 포함)
 

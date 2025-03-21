@@ -6,8 +6,6 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 
-import com.puzzlelog.api.dao.document.Piece.Type;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,7 +23,7 @@ public class PieceRequest {
     private String userId;
 
     @NotNull(message = "타입은 필수입니다.")
-    private Type type;
+    private String type; // TEXT, IMAGE, VIDEO, AUDIO
 
     private String content;  // Type이 TEXT일 때 필수
     

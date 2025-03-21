@@ -62,7 +62,7 @@ public class AuthService { // 인증 기능
                 .userPwd(passwordEncoder.encode(request.getUserPwd()))
                 .email(request.getEmail())
                 .birthDate(request.getBirthDate() != null ? LocalDate.parse(request.getBirthDate()) : null)
-                .gender(request.getGender() != null ? User.Gender.valueOf(request.getGender()) : null)
+                .gender(request.getGender())
                 .profileImg(profileImgUrl)
                 .build();
 
@@ -85,5 +85,12 @@ public class AuthService { // 인증 기능
                         .token(null) // JWT 적용 전 null
                         .build())
                 .orElse(null);
+    }
+    
+ // 관리자 확인
+    public boolean isAdmin(String userId) {
+        return userRepository.findByUserId(userId)
+                .map(user -> "ADMIN".equals(user.getRole()))
+                .orElse(false);
     }
 }

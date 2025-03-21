@@ -36,11 +36,11 @@ public class FriendService {
     	    this.friendHistoryRepository = friendHistoryRepository;
     	}
     
-    // 상태 확인 메소드
+    // 상태 확인 메소드 (null-safe)
     private void validateUserStatus(User user, boolean isRequester) {
-        if (user.getStatus() == User.Status.DELETED) {
+        if ("DELETED".equals(user.getStatus())) {
             throw new RuntimeException(isRequester ? "요청 사용자를 찾을 수 없습니다." : "대상 사용자를 찾을 수 없습니다.");
-        } else if (user.getStatus() == User.Status.BANNED) {
+        } else if ("BANNED".equals(user.getStatus())) {
             throw new RuntimeException(isRequester ? "차단된 사용자는 친구 요청을 보낼 수 없습니다."
                     : "차단된 사용자에게 친구 요청을 보낼 수 없습니다.");
         }
@@ -74,15 +74,15 @@ public class FriendService {
 
         if (existingFriend != null) {
             switch (existingFriend.getStatus()) {
-                case PENDING:
+                case "PENDING":
                     throw new RuntimeException("이미 친구 요청한 상태입니다.");
-                case ACCEPTED:
+                case "ACCEPTED":
                     throw new RuntimeException("이미 친구입니다.");
-                case BLOCKED:
+                case "BLOCKED":
                     throw new RuntimeException("차단된 사용자에게 친구 요청을 보낼 수 없습니다.");
-                case DEACTIVATED:
-                case REJECTED:
-                    existingFriend.setStatus(Friend.Status.PENDING);
+                case "DEACTIVATED":
+                case "REJECTED":
+                    existingFriend.setStatus("PENDING");
                     friend = friendRepository.save(existingFriend);
                     break;
                 default:
@@ -92,7 +92,7 @@ public class FriendService {
             friend = Friend.builder()
                     .user(requester)
                     .friend(receiver)
-                    .status(Friend.Status.PENDING)
+                    .status("PENDING")
                     .build();
 
             friend = friendRepository.save(friend);
@@ -102,7 +102,7 @@ public class FriendService {
         FriendHistory history = FriendHistory.builder()
                 .userId(userId)
                 .friendId(friendId)
-                .status(friend.getStatus().name())
+                .status(friend.getStatus())
                 .timestamp(LocalDateTime.now())
                 .build();
 
@@ -118,17 +118,17 @@ public class FriendService {
                 .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
                 .orElseThrow(() -> new RuntimeException("해당 친구 요청을 찾을 수 없습니다."));
 
-        if (friendRequest.getStatus() != Friend.Status.PENDING) {
+        if (!friendRequest.getStatus().equals("PENDING")) {
             throw new RuntimeException("이미 처리된 친구 요청입니다.");
         }
 
-        friendRequest.setStatus(Friend.Status.ACCEPTED);
+        friendRequest.setStatus("ACCEPTED");
         friendRepository.save(friendRequest);
 
         Friend reciprocalFriend = Friend.builder()
             .user(friendRequest.getFriend())
             .friend(friendRequest.getUser())
-            .status(Friend.Status.ACCEPTED)
+            .status("ACCEPTED")
             .build();
 
         friendRepository.save(reciprocalFriend);
@@ -137,35 +137,35 @@ public class FriendService {
         friendHistoryRepository.save(FriendHistory.builder()
             .userId(userId)              // 요청을 수락한 사람
             .friendId(friendId)          // 친구 요청 보낸 사람
-            .status(Friend.Status.ACCEPTED.name())
+            .status("ACCEPTED")
             .timestamp(LocalDateTime.now())
             .build());
     }
     
-    // 친구 요청 거절
+ // 친구 요청 거절
     @Transactional
     public void rejectFriendRequest(String userId, String friendId) {
         Friend friendRequest = friendRepository
             .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
             .orElseThrow(() -> new RuntimeException("해당 친구 요청을 찾을 수 없습니다."));
 
-        if (friendRequest.getStatus() != Friend.Status.PENDING) {
+        if (!friendRequest.getStatus().equals("PENDING")) {
             throw new RuntimeException("이미 처리된 친구 요청입니다.");
         }
 
-        friendRequest.setStatus(Friend.Status.REJECTED);
+        friendRequest.setStatus("REJECTED");
         friendRepository.save(friendRequest);
 
         // ✅ 친구 요청 거절 기록 MongoDB 저장
         friendHistoryRepository.save(FriendHistory.builder()
             .userId(userId)              // 요청을 거절한 사람
             .friendId(friendId)          // 친구 요청 보낸 사람
-            .status(Friend.Status.REJECTED.name())
+            .status("REJECTED")
             .timestamp(LocalDateTime.now())
             .build());
     }
 
-    // 친구 목록 조회 (페이징, 상태별 조회)
+ // 친구 목록 조회 (페이징, 상태별 조회)
     @Transactional(readOnly = true)
     public PagedFriendResponse getFriendsByType(String userId, String type, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -174,19 +174,19 @@ public class FriendService {
 
         switch (type.toLowerCase()) {
             case "your_request":  // 나에게 온 친구 요청 (받은 요청)
-                friends = friendRepository.findByFriend_UserIdAndStatus(userId, Friend.Status.PENDING, pageable);
+                friends = friendRepository.findByFriend_UserIdAndStatus(userId, "PENDING", pageable);
                 break;
 
             case "my_request":  // 내가 보낸 친구 요청
-                friends = friendRepository.findByUser_UserIdAndStatus(userId, Friend.Status.PENDING, pageable);
+                friends = friendRepository.findByUser_UserIdAndStatus(userId, "PENDING", pageable);
                 break;
 
             case "friends":  // 친구 상태
-                friends = friendRepository.findByUser_UserIdAndStatus(userId, Friend.Status.ACCEPTED, pageable);
+                friends = friendRepository.findByUser_UserIdAndStatus(userId, "ACCEPTED", pageable);
                 break;
 
             case "blocked":  // 차단된 친구 목록
-                friends = friendRepository.findByUser_UserIdAndStatus(userId, Friend.Status.BLOCKED, pageable);
+                friends = friendRepository.findByUser_UserIdAndStatus(userId, "BLOCKED", pageable);
                 break;
 
             default:
@@ -217,21 +217,21 @@ public class FriendService {
                     .friend(target)
                     .build());
 
-        friend.setStatus(Friend.Status.BLOCKED);
+        friend.setStatus("BLOCKED");
         friendRepository.save(friend);
 
         // MongoDB에 차단 상태 기록 저장
         friendHistoryRepository.save(FriendHistory.builder()
             .userId(userId)
             .friendId(friendId)
-            .status(Friend.Status.BLOCKED.name())
+            .status("BLOCKED")
             .timestamp(LocalDateTime.now())
             .build());
 
         return FriendResponse.from(friend);
     }
 
-    // 친구 차단 해제
+ // 친구 차단 해제
     @Transactional
     public FriendResponse unblockFriend(String userId, String friendId) {
         validateUserStatus(getUserByUserId(userId, true), true);
@@ -241,19 +241,19 @@ public class FriendService {
                 .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
                 .orElseThrow(() -> new RuntimeException("차단된 친구 정보를 찾을 수 없습니다."));
 
-        if (friend.getStatus() != Friend.Status.BLOCKED) {
+        if (!"BLOCKED".equals(friend.getStatus())) {
             throw new RuntimeException("현재 차단 상태가 아닙니다.");
         }
 
         // 차단 해제 시 기존 친구 상태로 복원 (ACCEPTED)
-        friend.setStatus(Friend.Status.ACCEPTED);
+        friend.setStatus("ACCEPTED");
         Friend updatedFriend = friendRepository.save(friend);
 
         // MongoDB에 차단 해제 상태 기록 저장
         friendHistoryRepository.save(FriendHistory.builder()
             .userId(userId)
             .friendId(friendId)
-            .status(Friend.Status.ACCEPTED.name()) // 차단 해제 시 ACCEPTED 상태로 복귀
+            .status("ACCEPTED") // 차단 해제 시 ACCEPTED 상태로 복귀
             .timestamp(LocalDateTime.now())
             .build());
 
@@ -269,16 +269,16 @@ public class FriendService {
         Friend friend = friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
                 .orElseThrow(() -> new RuntimeException("친구가 아닙니다."));
 
-        if (friend.getStatus() != Friend.Status.ACCEPTED) {
+        if (!"ACCEPTED".equals(friend.getStatus())) {
             throw new RuntimeException("친구가 아닙니다.");
         }
 
-        friend.setStatus(Friend.Status.DEACTIVATED);
+        friend.setStatus("DEACTIVATED");
         friendRepository.save(friend);
 
         friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
                 .ifPresent(reciprocal -> {
-                    reciprocal.setStatus(Friend.Status.DEACTIVATED);
+                    reciprocal.setStatus("DEACTIVATED");
                     friendRepository.save(reciprocal);
                 });
 
@@ -286,7 +286,7 @@ public class FriendService {
         friendHistoryRepository.save(FriendHistory.builder()
             .userId(userId)     // 삭제한 사람
             .friendId(friendId) // 삭제된 상대방
-            .status(Friend.Status.DEACTIVATED.name())
+            .status("DEACTIVATED")
             .timestamp(LocalDateTime.now())
             .build());
 

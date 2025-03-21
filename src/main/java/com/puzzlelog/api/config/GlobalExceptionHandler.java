@@ -1,7 +1,5 @@
 package com.puzzlelog.api.config;
 
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,11 +9,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException e) {
+    	e.printStackTrace(); // 확인 로그
         return ResponseEntity
                 .badRequest()
                 .body(ApiResponse.fail(e.getMessage()));
