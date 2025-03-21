@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import com.puzzlelog.api.dao.document.Comment;
 import com.puzzlelog.api.dao.document.Post;
 import com.puzzlelog.api.dto.request.comment.CommentRequest;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
 import com.puzzlelog.api.service.CommentService;
 import com.puzzlelog.api.service.PostService;
-import com.puzzlelog.api.config.ApiResponse;
 
 import java.util.List;
 

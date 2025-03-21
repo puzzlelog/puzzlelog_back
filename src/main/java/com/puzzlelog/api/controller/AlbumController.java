@@ -1,8 +1,8 @@
 package com.puzzlelog.api.controller;
 
-import com.puzzlelog.api.config.ApiResponse;
 import com.puzzlelog.api.dto.request.album.AlbumRequest;
 import com.puzzlelog.api.dto.response.album.AlbumResponse;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
 import com.puzzlelog.api.service.AlbumService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;

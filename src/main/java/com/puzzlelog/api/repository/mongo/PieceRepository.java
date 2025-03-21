@@ -21,4 +21,7 @@ public interface PieceRepository extends MongoRepository<Piece, String> {
     // 페이징 처리 가능
     Page<Piece> findByUserIdAndIsDeletedFalse(Integer userId, Pageable pageable);
     Page<Piece> findByIsDeletedFalse(Pageable pageable);
+    
+    // 컨텐츠 타입 조회
+    boolean existsByIdAndTypeAndIsDeletedFalse(String id, String type);
 }

@@ -25,11 +25,14 @@ import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
 import com.puzzlelog.api.dto.response.user.UserResponse;
 import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
+import com.puzzlelog.api.repository.listsearch.UserListSearch;
 import com.puzzlelog.api.repository.mongo.UserHistoryRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
-import com.puzzlelog.api.repository.mysql.UserSpecifications;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -37,17 +40,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    
+    private final UserListSearch userListSearch;
     private final UserHistoryRepository userHistoryRepository;
-
-    public UserService(UserRepository userRepository, 
-            PasswordEncoder passwordEncoder,
-            CloudinaryService cloudinaryService,
-            UserHistoryRepository userHistoryRepository) {
-		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
-		this.cloudinaryService = cloudinaryService;
-		this.userHistoryRepository = userHistoryRepository;
-	}
 
     // 전체 사용자 조회 (페이징)
     @Transactional(readOnly = true)
@@ -60,9 +55,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> findUsers(UserSearchRequest request, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        Specification<User> specs = UserSpecifications.withConditions(request);
-
+        Specification<User> specs = userListSearch.buildSearch(request);
         return userRepository.findAll(specs, pageable).map(UserResponse::from);
     }
     

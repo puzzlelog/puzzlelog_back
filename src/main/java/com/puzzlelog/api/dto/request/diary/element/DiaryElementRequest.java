@@ -1,9 +1,8 @@
-package com.puzzlelog.api.dto.request.diary;
+package com.puzzlelog.api.dto.request.diary.element;
 
 import java.util.List;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 import lombok.*;
 
@@ -20,9 +19,6 @@ public class DiaryElementRequest {
     private String contentId;     // DRAWING일 때 null 허용
     private String drawingData;   // DRAWING 타입일 때만 필수
 
-    @NotNull(message = "요소의 순서는 명시적으로 지정되어야 합니다.")
-    private Integer elementOrder;
-
     @Builder.Default
     private List<Double> position = List.of(0.0, 0.0);
 
@@ -33,4 +29,13 @@ public class DiaryElementRequest {
     private Double rotation = 0.0;
 
     private ElementDecorationRequest decoration;  
+    
+    // DTO 레벨의 간단한 타입별 검증 메서드
+    public boolean isValidByType() {
+        if ("DRAWING".equals(elementType)) {
+            return drawingData != null && !drawingData.isBlank() && (contentId == null || contentId.isBlank());
+        } else {
+            return contentId != null && !contentId.isBlank() && (drawingData == null || drawingData.isBlank());
+        }
+    }
 }

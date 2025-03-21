@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.response.diary;
+package com.puzzlelog.api.dto.response.diary.meta;
 
 import java.time.Instant;
 import java.util.List;

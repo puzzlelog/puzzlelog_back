@@ -1,4 +1,4 @@
-package com.puzzlelog.api.config;
+package com.puzzlelog.api.dto.response.common;
 
 import lombok.*;
 

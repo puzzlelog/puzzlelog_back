@@ -1,19 +1,21 @@
-package com.puzzlelog.api.repository.mysql;
-
-import com.puzzlelog.api.dao.entity.User;
-import com.puzzlelog.api.dto.request.user.UserSearchRequest;
-import org.springframework.data.jpa.domain.Specification;
+package com.puzzlelog.api.repository.listsearch;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-public class UserSpecifications {
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 
-    // 조건별 동적 쿼리 생성 (Specification 조합)
-    public static Specification<User> withConditions(UserSearchRequest req) {
-        return Specification
-            .where(emailEquals(req.getEmail()))
+import com.puzzlelog.api.dao.entity.User;
+import com.puzzlelog.api.dto.request.user.UserSearchRequest;
+
+@Component
+public class UserListSearch implements ListSearch<UserSearchRequest, Specification<User>> { // 유저 목록 조회
+
+    @Override
+    public Specification<User> buildSearch(UserSearchRequest req) {
+        return Specification.where(emailEquals(req.getEmail()))
             .and(userIdEquals(req.getUserId()))
             .and(nicknameEquals(req.getNickname()))
             .and(createdAtBetween(req.getCreatedAtFrom(), req.getCreatedAtTo()))
@@ -25,56 +27,69 @@ public class UserSpecifications {
             .and(lastLoginBetween(req.getLastLoginFrom(), req.getLastLoginTo()));
     }
 
-    private static Specification<User> emailEquals(String email) {
+    private Specification<User> emailEquals(String email) {
         return (root, query, cb) -> email == null ? null : cb.equal(root.get("email"), email);
     }
 
-    private static Specification<User> userIdEquals(String userId) {
+    private Specification<User> userIdEquals(String userId) {
         return (root, query, cb) -> userId == null ? null : cb.equal(root.get("userId"), userId);
     }
 
-    private static Specification<User> nicknameEquals(String nickname) {
+    private Specification<User> nicknameEquals(String nickname) {
         return (root, query, cb) -> nickname == null ? null : cb.equal(root.get("nickname"), nickname);
     }
 
-    // 생성일자 범위로 조회
-    private static Specification<User> createdAtBetween(LocalDate from, LocalDate to) {
+    private Specification<User> createdAtBetween(LocalDate from, LocalDate to) {
         if (from == null && to == null) return null;
 
         LocalDateTime fromDate = from != null ? from.atStartOfDay() : LocalDateTime.MIN;
         LocalDateTime toDate = to != null ? to.atTime(LocalTime.MAX) : LocalDateTime.MAX;
+
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("createdAtFrom 날짜는 createdAtTo 날짜보다 이전이어야 합니다.");
+        }
 
         return (root, query, cb) -> cb.between(root.get("createdAt"), fromDate, toDate);
     }
 
-    // 생년월일 범위로 조회
-    private static Specification<User> birthDateBetween(LocalDate from, LocalDate to) {
+    private Specification<User> birthDateBetween(LocalDate from, LocalDate to) {
         if (from == null && to == null) return null;
-        return (root, query, cb) -> cb.between(root.get("birthDate"), from, to);
+
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("birthDateFrom 날짜는 birthDateTo 날짜보다 이전이어야 합니다.");
+        }
+
+        LocalDate fromDate = from != null ? from : LocalDate.of(1900, 1, 1);
+        LocalDate toDate = to != null ? to : LocalDate.now();
+
+        return (root, query, cb) -> cb.between(root.get("birthDate"), fromDate, toDate);
     }
 
-    private static Specification<User> genderEquals(String gender) {
+    private Specification<User> genderEquals(String gender) {
         return (root, query, cb) -> gender == null ? null : cb.equal(root.get("gender"), gender);
     }
 
-    private static Specification<User> isAlarmEquals(Boolean isAlarm) {
+    private Specification<User> isAlarmEquals(Boolean isAlarm) {
         return (root, query, cb) -> isAlarm == null ? null : cb.equal(root.get("isAlarm"), isAlarm);
     }
 
-    private static Specification<User> statusEquals(String status) {
+    private Specification<User> statusEquals(String status) {
         return (root, query, cb) -> status == null ? null : cb.equal(root.get("status"), status);
     }
 
-    private static Specification<User> roleEquals(String role) {
+    private Specification<User> roleEquals(String role) {
         return (root, query, cb) -> role == null ? null : cb.equal(root.get("role"), role);
     }
 
-    // 마지막 로그인 범위로 조회
-    private static Specification<User> lastLoginBetween(LocalDate from, LocalDate to) {
+    private Specification<User> lastLoginBetween(LocalDate from, LocalDate to) {
         if (from == null && to == null) return null;
 
         LocalDateTime fromDate = from != null ? from.atStartOfDay() : LocalDateTime.MIN;
         LocalDateTime toDate = to != null ? to.atTime(LocalTime.MAX) : LocalDateTime.MAX;
+
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("lastLoginFrom 날짜는 lastLoginTo 날짜보다 이전이어야 합니다.");
+        }
 
         return (root, query, cb) -> cb.between(root.get("lastLogin"), fromDate, toDate);
     }

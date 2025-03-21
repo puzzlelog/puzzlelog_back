@@ -1,4 +1,4 @@
-package com.puzzlelog.api.dto.request.diary;
+package com.puzzlelog.api.dto.request.diary.element;
 
 import lombok.*;
 import java.util.List;
