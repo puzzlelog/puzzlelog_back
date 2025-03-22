@@ -51,8 +51,9 @@ public class DiaryElementService {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
-	    if (!request.isValidByType()) {
-	        throw new IllegalArgumentException("요소 타입과 contentId/drawingData 정보가 올바르지 않습니다.");
+	    String errorMessage = request.validateAndGetMessage();
+	    if (errorMessage != null) {
+	        throw new IllegalArgumentException(errorMessage);
 	    }
 
 	    DiaryElement element = DiaryElement.builder()
@@ -60,6 +61,7 @@ public class DiaryElementService {
 	        .elementType(request.getElementType())
 	        .contentId(request.getContentId())
 	        .drawingData(request.getDrawingData())
+	        .date(request.getDate())
 	        .position(request.getPosition())
 	        .scale(request.getScale())
 	        .rotation(request.getRotation())
@@ -108,7 +110,7 @@ public class DiaryElementService {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
-	    final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING");
+	    final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING", "DATE");
 	    if (request.getElementType() != null && !request.getElementType().isBlank()) {
 	        if (!allowedTypes.contains(request.getElementType())) {
 	            throw new IllegalArgumentException("잘못된 요소 타입입니다: " + request.getElementType());
@@ -179,6 +181,18 @@ public class DiaryElementService {
 
 	        updatedFields.put("drawingData", new DiaryElementUpdateResponse.UpdateField(element.getDrawingData(), request.getDrawingData()));
 	        element.setDrawingData(request.getDrawingData());
+	    }
+	    
+	    if (request.getDate() != null && !request.getDate().equals(element.getDate())) {
+	        if (!"DATE".equals(element.getElementType())) {
+	        	throw new IllegalArgumentException("DATE 타입의 요소만 날짜를 지정할 수 있습니다.");
+	        }
+	        if (!request.getDate().matches("\\d{4}-\\d{2}-\\d{2}")) {
+	            throw new IllegalArgumentException("날짜 형식이 올바르지 않습니다. (YYYY-MM-DD 형식 필요)");
+	        }
+
+	        updatedFields.put("date", new DiaryElementUpdateResponse.UpdateField(element.getDate(), request.getDate()));
+	        element.setDate(request.getDate());
 	    }
 
 	    if (request.getPosition() != null 

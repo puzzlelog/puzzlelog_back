@@ -80,14 +80,14 @@ public class DiaryService {
         diaryRepository.save(diary);
         
         // [유효성 검사] 요소 타입과 contentId/drawingData 검증 (간결화 버전)
-        final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING");
+        final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING", "DATE");
 
         request.getElements().forEach(elementRequest -> {
             if (!allowedTypes.contains(elementRequest.getElementType())) {
                 throw new IllegalArgumentException("허용되지 않는 요소 타입입니다: " + elementRequest.getElementType());
             }
             if (!elementRequest.isValidByType()) {
-                throw new IllegalArgumentException("요소 타입과 contentId 또는 drawingData가 올바르지 않습니다: " 
+                throw new IllegalArgumentException("요소 타입과 필수 데이터가 올바르지 않습니다: " 
                                                    + elementRequest.getElementType());
             }
         });

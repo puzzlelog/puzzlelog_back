@@ -17,6 +17,7 @@ public class DiaryElementUpdateRequest {
 
     private String contentId;     // 동일 타입 내 변경 가능
     private String drawingData;   // DRAWING 타입만 가능
+    private String date;          // DATE 타입만 가능 (YYYY-MM-DD 형식)
 
     private List<Double> position;
     private Double scale;

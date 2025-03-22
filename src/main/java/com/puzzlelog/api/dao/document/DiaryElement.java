@@ -21,13 +21,14 @@ import lombok.Setter;
 @Document(collection = "diary_elements")
 public class DiaryElement {
 
-	@Id
-	private String id;
+    @Id
+    private String id;
 
     private String diaryId;
-    private String elementType; // TEXT, IMAGE, AUDIO, VIDEO, STICKER, DRAWING
+    private String elementType; // TEXT, IMAGE, AUDIO, VIDEO, STICKER, DRAWING, DATE
     private String contentId;
-    private String drawingData;
+    private String drawingData; // DRAWING 타입일 때만 사용됨
+    private String date; // DATE 타입일 때만 사용됨
 
     @Builder.Default
     private List<Double> position = List.of(0.0, 0.0);
