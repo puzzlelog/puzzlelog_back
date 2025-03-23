@@ -27,7 +27,7 @@ public class PieceResponse {
     private GeoJsonPoint location;
     private String mediaId;
     private String publicId;
-    private Boolean isPrivate;
+    private boolean privatePiece;
     private Instant createdAt;
 
     public static PieceResponse from(Piece piece) {
@@ -40,7 +40,7 @@ public class PieceResponse {
                 .location(piece.getLocation())
                 .mediaId(piece.getMediaId())
                 .publicId(piece.getPublicId())
-                .isPrivate(piece.getIsPrivate())
+                .privatePiece(piece.isPrivatePiece())
                 .createdAt(piece.getCreatedAt())
                 .build();
     }

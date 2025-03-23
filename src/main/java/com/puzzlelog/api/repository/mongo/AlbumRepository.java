@@ -17,6 +17,6 @@ public interface AlbumRepository extends MongoRepository<Album, String> {
     Optional<Album> findById(ObjectId id);
     
     // ✅ isDeleted가 false인 앨범만 가져오기
-    List<Album> findByUserIdAndIsDeletedFalse(String userId);
+    List<Album> findByUserIdAndDeletedFalse(String userId);
 }
 

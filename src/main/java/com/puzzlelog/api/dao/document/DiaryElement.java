@@ -44,5 +44,5 @@ public class DiaryElement {
     private Instant updatedAt;
 
     @Builder.Default
-    private Boolean isDeleted = false; // 논리적 삭제 여부
+    private boolean deleted = false; // 논리적 삭제 여부
 }

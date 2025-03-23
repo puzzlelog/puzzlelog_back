@@ -56,12 +56,13 @@ public class DiaryController {
 	
 	// 요소 반환 X [일기 제목, 작성 날짜, emotion, 배경 등 간단한 메타 정보만 반환]
 	@GetMapping
-	public ResponseEntity<ApiResponse<PagedDiaryResponse>> getDiaries(
-	        @ModelAttribute DiarySearchRequest request, // ✅ 쿼리 파라미터를 DTO에 매핑
+	public ResponseEntity<ApiResponse<PagedDiaryResponse<?>>> getDiaries(
+	        @ModelAttribute DiarySearchRequest request,
 	        @RequestParam(defaultValue = "0") int page,
-	        @RequestParam(defaultValue = "20") int size) {
+	        @RequestParam(defaultValue = "20") int size,
+	        @RequestParam(defaultValue = "false") boolean includeElements) {
 
-	    PagedDiaryResponse response = diaryService.getDiaries(request, page, size);
+	    PagedDiaryResponse<?> response = diaryService.getDiaries(request, page, size, includeElements);
 	    return ResponseEntity.ok(ApiResponse.success(response, "일기 목록 조회 성공"));
 	}
 	

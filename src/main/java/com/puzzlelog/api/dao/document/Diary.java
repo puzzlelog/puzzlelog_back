@@ -39,14 +39,14 @@ public class Diary {
     private String emotionContentId;  // 감정 상태 콘텐츠의 Content Id (null 가능)
 
     @Builder.Default
-    private Boolean isShared = false;
+    private boolean shared = false;
     
     @CreatedDate
     private Instant createdAt;
     private Instant updatedAt;
     
     @Builder.Default
-    private Boolean isDeleted = false;
+    private boolean deleted = false;
 
     // 타임캡슐에 사용
     private Instant openAt;

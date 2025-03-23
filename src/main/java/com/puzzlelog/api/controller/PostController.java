@@ -15,7 +15,7 @@ import com.puzzlelog.api.service.PostService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/posts")
 public class PostController {
 
     @Autowired

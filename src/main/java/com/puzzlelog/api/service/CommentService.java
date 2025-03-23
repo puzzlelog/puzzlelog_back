@@ -40,13 +40,13 @@ public class CommentService {
         return commentRepository.save(comment);
     }
     
-    public List<Comment> getCommentsByPostId(String postId, boolean isDeleted) {
-        return commentRepository.findByPostIdAndIsDeleted(postId, isDeleted);
+    public List<Comment> getCommentsByPostId(String postId, boolean deleted) {
+        return commentRepository.findByPostIdAndDeleted(postId, deleted);
     }
-    
+
     // 특정 게시글의 댓글 수 조회
     public long getCommentCountByPostId(String postId) {
-    	return commentRepository.countByPostIdAndIsDeleted(postId, false);
+        return commentRepository.countByPostIdAndDeleted(postId, false);
     }
     
     // 댓글 삭제 (isDeleted 필드를 true로 업데이트)

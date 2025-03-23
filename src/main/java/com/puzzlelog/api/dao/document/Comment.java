@@ -27,5 +27,5 @@ public class Comment {
 	private String content;
 	@CreatedDate
 	private LocalDateTime createdAt;
-	private boolean isDeleted;
+	private boolean deleted;
 }

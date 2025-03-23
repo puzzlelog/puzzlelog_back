@@ -12,11 +12,11 @@ import com.puzzlelog.api.dao.document.DiaryElement;
 @Repository
 public interface DiaryElementRepository extends MongoRepository<DiaryElement, String> {
 
-    List<DiaryElement> findAllByDiaryIdAndIsDeletedFalse(String diaryId);
+    List<DiaryElement> findAllByDiaryIdAndDeletedFalse(String diaryId);
 
-    Page<DiaryElement> findAllByDiaryIdAndIsDeletedFalse(String diaryId, Pageable pageable);
+    Page<DiaryElement> findAllByDiaryIdAndDeletedFalse(String diaryId, Pageable pageable);
 
-    Page<DiaryElement> findAllByDiaryIdAndElementTypeAndIsDeletedFalse(String diaryId, String elementType, Pageable pageable);
+    Page<DiaryElement> findAllByDiaryIdAndElementTypeAndDeletedFalse(String diaryId, String elementType, Pageable pageable);
 
-    Optional<DiaryElement> findByIdAndIsDeletedFalse(String id);
+    Optional<DiaryElement> findByIdAndDeletedFalse(String id);
 }
