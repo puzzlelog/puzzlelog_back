@@ -47,7 +47,7 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+	    if (diary.isDeleted()) {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
@@ -67,8 +67,7 @@ public class DiaryElementService {
 	        .rotation(request.getRotation())
 	        .createdAt(Instant.now())
 	        .updatedAt(Instant.now())
-	        .isDeleted(false)
-	        // decoration 등 추가 로직 위치
+	        .deleted(false)
 	        .build();
 
 	    diaryElementRepository.save(element);
@@ -90,11 +89,11 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+	    if (diary.isDeleted()) {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
-	    DiaryElement element = diaryElementRepository.findByIdAndIsDeletedFalse(elementId)
+	    DiaryElement element = diaryElementRepository.findByIdAndDeletedFalse(elementId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 요소입니다."));
 
 	    return DiaryElementResponse.from(element);
@@ -106,7 +105,7 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+	    if (diary.isDeleted()) { // ✅ 수정됨
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
@@ -121,9 +120,9 @@ public class DiaryElementService {
 	    Page<DiaryElement> elementPage;
 
 	    if (request.getElementType() != null && !request.getElementType().isBlank()) {
-	        elementPage = diaryElementRepository.findAllByDiaryIdAndElementTypeAndIsDeletedFalse(diaryId, request.getElementType(), pageable);
+	        elementPage = diaryElementRepository.findAllByDiaryIdAndElementTypeAndDeletedFalse(diaryId, request.getElementType(), pageable); // ✅ 수정됨
 	    } else {
-	        elementPage = diaryElementRepository.findAllByDiaryIdAndIsDeletedFalse(diaryId, pageable);
+	        elementPage = diaryElementRepository.findAllByDiaryIdAndDeletedFalse(diaryId, pageable); // ✅ 수정됨
 	    }
 
 	    return PagedDiaryElementResponse.of(
@@ -140,14 +139,14 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+	    if (diary.isDeleted()) {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
 	    DiaryElement element = diaryElementRepository.findById(elementId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 요소입니다."));
 
-	    if (Boolean.TRUE.equals(element.getIsDeleted())) {
+	    if (element.isDeleted()) {
 	        throw new NoSuchElementException("존재하지 않는 요소입니다.");
 	    }
 
@@ -240,19 +239,19 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+	    if (diary.isDeleted()) { // ✅ 수정됨
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
 	    DiaryElement element = diaryElementRepository.findById(elementId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 요소입니다."));
 
-	    if (Boolean.TRUE.equals(element.getIsDeleted())) {
+	    if (element.isDeleted()) { // ✅ 수정됨
 	        throw new NoSuchElementException("존재하지 않는 요소입니다.");
 	    }
 
 	    // 요소 논리 삭제 처리
-	    element.setIsDeleted(true);
+	    element.setDeleted(true); // ✅ 수정됨
 	    element.setUpdatedAt(Instant.now());
 	    diaryElementRepository.save(element);
 

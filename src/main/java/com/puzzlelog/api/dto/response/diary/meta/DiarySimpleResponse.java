@@ -22,7 +22,7 @@ public class DiarySimpleResponse {
     private String backgroundContentId;
     private String themeColor;
     private String emotionContentId;
-    private Boolean isShared;
+    private Boolean shared;
     private Instant openAt;
     private Instant createdAt;
     private Instant updatedAt;
@@ -35,7 +35,7 @@ public class DiarySimpleResponse {
             .backgroundContentId(diary.getBackgroundContentId())
             .themeColor(diary.getThemeColor())
             .emotionContentId(diary.getEmotionContentId())
-            .isShared(diary.getIsShared())
+            .shared(diary.isShared())
             .openAt(diary.getOpenAt())
             .createdAt(diary.getCreatedAt())
             .updatedAt(diary.getUpdatedAt())

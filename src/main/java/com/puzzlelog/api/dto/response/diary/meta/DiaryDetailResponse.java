@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.puzzlelog.api.dao.document.Asset;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dao.document.DiaryElement;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementResponse;
@@ -23,28 +24,35 @@ public class DiaryDetailResponse {
     private String diaryId;
     private String userId;
     private String title;
-    private String backgroundContentId;
+
+    private AssetResponse background;  // 배경 상세 정보 포함
     private String themeColor;
-    private String emotionContentId;
-    private Boolean isShared;
-    private Instant openAt;  // 타임캡슐 여부 (없으면 null)
+    private AssetResponse emotion;     // 이모션 상세 정보 포함
+
+    private Boolean shared;
+    private Instant openAt; // 타임캡슐 여부 없으면 null
     private Instant createdAt;
     private Instant updatedAt;
 
-    private List<DiaryElementResponse> elements;  // 요소 상세 정보 리스트
-    
-    public static DiaryDetailResponse from(Diary diary, List<DiaryElement> elements) {
+    private List<DiaryElementResponse> elements;
+
+    public static DiaryDetailResponse from(
+            Diary diary, 
+            Asset background, 
+            Asset emotion, 
+            List<DiaryElement> elements) {
+        
         return DiaryDetailResponse.builder()
             .diaryId(diary.getId())
             .userId(diary.getUserId())
             .title(diary.getTitle())
-            .backgroundContentId(diary.getBackgroundContentId())
+            .background(AssetResponse.from(background))
             .themeColor(diary.getThemeColor())
-            .emotionContentId(diary.getEmotionContentId())
-            .isShared(diary.getIsShared())
+            .emotion(AssetResponse.from(emotion))
+            .shared(diary.isShared())
+            .openAt(diary.getOpenAt())
             .createdAt(diary.getCreatedAt())
             .updatedAt(diary.getUpdatedAt())
-            .openAt(diary.getOpenAt())
             .elements(elements.stream()
                 .map(DiaryElementResponse::from)
                 .collect(Collectors.toList()))

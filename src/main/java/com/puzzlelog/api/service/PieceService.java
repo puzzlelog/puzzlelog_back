@@ -96,20 +96,20 @@ public class PieceService {
         }
 
         Piece piece = Piece.builder()
-                .userId(request.getUserId())
-                .type(request.getType())
-                .content(request.getContent())
-                .tags(request.getTags())
-                .location(request.getLocation())
-                .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false)
-                .mediaId(mediaId)
-                .publicId(publicId)
-                .isDeleted(false)  // 명시적으로 false 추가
-                .createdAt(Instant.now())
-                .build();
+        	    .userId(request.getUserId())
+        	    .type(request.getType())
+        	    .content(request.getContent())
+        	    .tags(request.getTags())
+        	    .location(request.getLocation())
+        	    .privatePiece(request.getIsPrivate() != null ? request.getIsPrivate() : false)
+        	    .mediaId(mediaId)
+        	    .publicId(publicId)
+        	    .deleted(false)
+        	    .createdAt(Instant.now())
+        	    .build();
 
-        Piece savedPiece = pieceRepository.save(piece);
-        return PieceResponse.from(savedPiece);
+        	Piece savedPiece = pieceRepository.save(piece);
+        	return PieceResponse.from(savedPiece);
     }
 
     
@@ -119,7 +119,7 @@ public class PieceService {
         Piece piece = pieceRepository.findById(pieceId)
             .orElseThrow(() -> new RuntimeException("조각을 찾을 수 없습니다."));
 
-        if (piece.getIsDeleted()) {
+        if (piece.isDeleted()) {
             throw new RuntimeException("조각을 찾을 수 없습니다.");
         }
 
@@ -238,9 +238,9 @@ public class PieceService {
             piece.setLocation(request.getLocation());
         }
 
-        if (request.getIsPrivate() != null && !request.getIsPrivate().equals(piece.getIsPrivate())) {
-            updatedFields.put("isPrivate", new PieceUpdateResponse.UpdateField(piece.getIsPrivate(), request.getIsPrivate()));
-            piece.setIsPrivate(request.getIsPrivate());
+        if (request.getIsPrivate() != null && !request.getIsPrivate().equals(piece.isPrivatePiece())) {
+            updatedFields.put("privatePiece", new PieceUpdateResponse.UpdateField(piece.isPrivatePiece(), request.getIsPrivate()));
+            piece.setPrivatePiece(request.getIsPrivate());
         }
     }
 
@@ -268,12 +268,11 @@ public class PieceService {
         Piece piece = pieceRepository.findById(pieceId)
             .orElseThrow(() -> new RuntimeException("존재하지 않는 조각입니다."));
 
-        // 이미 삭제된 경우 처리
-        if (piece.getIsDeleted()) {
+        if (piece.isDeleted()) { // ✅ 수정됨
             throw new RuntimeException("존재하지 않는 조각입니다.");
         }
 
-        piece.setIsDeleted(true);  // 삭제 처리
+        piece.setDeleted(true);  // ✅ 수정됨
         pieceRepository.save(piece);
 
         return PieceDeleteResponse.builder()

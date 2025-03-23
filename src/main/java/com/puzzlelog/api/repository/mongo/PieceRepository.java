@@ -13,15 +13,15 @@ import com.puzzlelog.api.dao.document.Piece;
 public interface PieceRepository extends MongoRepository<Piece, String> {
     
     // 특정 사용자 조회
-    List<Piece> findByUserIdAndIsDeletedFalse(Integer userId);
+    List<Piece> findByUserIdAndDeletedFalse(Integer userId);
 
     // 모든 활성 조각 조회
-    List<Piece> findByIsDeletedFalse();
+    List<Piece> findByDeletedFalse();
 
     // 페이징 처리 가능
-    Page<Piece> findByUserIdAndIsDeletedFalse(Integer userId, Pageable pageable);
-    Page<Piece> findByIsDeletedFalse(Pageable pageable);
+    Page<Piece> findByUserIdAndDeletedFalse(Integer userId, Pageable pageable);
+    Page<Piece> findByDeletedFalse(Pageable pageable);
     
     // 컨텐츠 타입 조회
-    boolean existsByIdAndTypeAndIsDeletedFalse(String id, String type);
+    boolean existsByIdAndTypeAndDeletedFalse(String id, String type);
 }

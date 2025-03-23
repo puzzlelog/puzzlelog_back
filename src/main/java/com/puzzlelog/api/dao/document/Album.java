@@ -24,7 +24,7 @@ public class Album {
     private String title; 
     private List<String> diaryId;
     private boolean purchased;
-    private boolean isDeleted;
+    private boolean deleted;
     
     @CreatedDate
     private Date createdAt;

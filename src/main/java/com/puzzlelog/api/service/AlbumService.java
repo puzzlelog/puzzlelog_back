@@ -18,7 +18,7 @@ public class AlbumService {
 
     // 사용자별 앨범 조회
     public List<Album> getAlbumsByUser(String userId) {
-        return albumRepository.findByUserIdAndIsDeletedFalse(userId);
+        return albumRepository.findByUserIdAndDeletedFalse(userId); 
     }
 
     // 특정 앨범 조회

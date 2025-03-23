@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.puzzlelog.api.dao.document.Asset;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dao.document.DiaryElement;
 import com.puzzlelog.api.dto.request.diary.element.DiaryElementsOrderUpdateRequest;
@@ -31,8 +34,10 @@ import com.puzzlelog.api.dto.response.diary.meta.DiaryDeleteResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryDetailResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryMetaUpdateResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryResponse;
+import com.puzzlelog.api.dto.response.diary.meta.DiarySimpleResponse;
 import com.puzzlelog.api.dto.response.diary.meta.PagedDiaryResponse;
 import com.puzzlelog.api.repository.listsearch.DiaryListSearch;
+import com.puzzlelog.api.repository.mongo.AssetRepository;
 import com.puzzlelog.api.repository.mongo.DiaryElementRepository;
 import com.puzzlelog.api.repository.mongo.DiaryRepository;
 
@@ -46,6 +51,7 @@ public class DiaryService {
     private final DiaryElementRepository diaryElementRepository;
     private final MongoTemplate mongoTemplate;
     private final DiaryListSearch diaryListSearch;
+    private final AssetRepository assetRepository;
 
     // 일기 생성
     @Transactional
@@ -65,19 +71,19 @@ public class DiaryService {
 
         // [일기 생성] Diary 객체 생성 및 저장
         Diary diary = Diary.builder()
-            .userId(request.getUserId())
-            .title(request.getTitle())
-            .backgroundContentId(request.getBackgroundContentId())
-            .themeColor(request.getThemeColor())
-            .emotionContentId(request.getEmotionContentId())
-            .isShared(Optional.ofNullable(request.getIsShared()).orElse(false))
-            .openAt(openAtInstant) // 타임캡슐이면 처리된 Instant, 일반 일기는 null
-            .createdAt(Instant.now())
-            .updatedAt(Instant.now())
-            .isDeleted(false)
-            .build();
+        	    .userId(request.getUserId())
+        	    .title(request.getTitle())
+        	    .backgroundContentId(request.getBackgroundContentId())
+        	    .themeColor(request.getThemeColor())
+        	    .emotionContentId(request.getEmotionContentId())
+        	    .shared(Optional.ofNullable(request.getIsShared()).orElse(false))
+        	    .openAt(openAtInstant)
+        	    .createdAt(Instant.now())
+        	    .updatedAt(Instant.now())
+        	    .deleted(false)
+        	    .build();
 
-        diaryRepository.save(diary);
+        	diaryRepository.save(diary);
         
         // [유효성 검사] 요소 타입과 contentId/drawingData 검증 (간결화 버전)
         final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING", "DATE");
@@ -129,33 +135,83 @@ public class DiaryService {
         Diary diary = diaryRepository.findById(diaryId)
             .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-        List<DiaryElement> elements = diaryElementRepository.findAllByDiaryIdAndIsDeletedFalse(diaryId);
+        // Diary 요소 조회
+        List<DiaryElement> elements = diaryElementRepository.findAllByDiaryIdAndDeletedFalse(diaryId);
 
         // diary.elementIds의 순서대로 elements 정렬
         Map<String, DiaryElement> elementMap = elements.stream()
-            .collect(Collectors.toMap(DiaryElement::getId, e -> e)); // ✅ getId()로 변경
+            .collect(Collectors.toMap(DiaryElement::getId, e -> e));
 
         List<DiaryElement> sortedElements = diary.getElementIds().stream()
             .map(elementMap::get)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
-        return DiaryDetailResponse.from(diary, sortedElements);
+        // ✅ 배경과 이모션 Asset 조회 추가
+        Asset background = diary.getBackgroundContentId() != null ?
+            assetRepository.findByIdAndDeletedFalse(diary.getBackgroundContentId()).orElse(null) : null;
+
+        Asset emotion = diary.getEmotionContentId() != null ?
+            assetRepository.findByIdAndDeletedFalse(diary.getEmotionContentId()).orElse(null) : null;
+
+        // ✅ 수정된 DTO 생성
+        return DiaryDetailResponse.from(diary, background, emotion, sortedElements);
     }
     
 
 	 // 일기 목록 조회 (현재 그대로 유지 가능)
-	 @Transactional(readOnly = true)
-	 public PagedDiaryResponse getDiaries(DiarySearchRequest request, int page, int size) {
-	     Criteria criteria = diaryListSearch.buildSearch(request);
-	     Query query = new Query(criteria)
-	         .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-	
-	     List<Diary> diaries = mongoTemplate.find(query, Diary.class);
-	     long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Diary.class);
-	
-	     return PagedDiaryResponse.of(diaries, page, size, total);
-	 }
+    @Transactional(readOnly = true)
+    public PagedDiaryResponse<?> getDiaries(DiarySearchRequest request, int page, int size, boolean includeElements) {
+        Criteria criteria = diaryListSearch.buildSearch(request);
+        Query query = new Query(criteria)
+            .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+        if (!includeElements) {
+            query.fields().exclude("elementIds");  // 요소 ID 리스트 제외
+        }
+
+        List<Diary> diaries = mongoTemplate.find(query, Diary.class);
+        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Diary.class);
+
+        if (includeElements) {
+            // 상세 조회 (배경, 이모션, 요소까지 포함)
+            
+            // Asset ID를 미리 수집하여 한 번에 조회
+            Set<String> assetIds = diaries.stream()
+                .flatMap(d -> Stream.of(d.getBackgroundContentId(), d.getEmotionContentId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+            Map<String, Asset> assets = mongoTemplate.find(
+                Query.query(Criteria.where("_id").in(assetIds).and("deleted").is(false)),
+                Asset.class
+            ).stream().collect(Collectors.toMap(Asset::getId, a -> a));
+
+            List<DiaryDetailResponse> detailedResponses = diaries.stream()
+            	    .<DiaryDetailResponse>map(diary -> {
+            	        List<DiaryElement> elements = mongoTemplate.find(
+            	            Query.query(Criteria.where("_id").in(diary.getElementIds())),
+            	            DiaryElement.class
+            	        );
+
+            	        Asset background = assets.get(diary.getBackgroundContentId());
+            	        Asset emotion = assets.get(diary.getEmotionContentId());
+
+            	        return DiaryDetailResponse.from(diary, background, emotion, elements);
+            	    })
+            	    .collect(Collectors.toList());
+
+            	return PagedDiaryResponse.of(detailedResponses, page, size, total);
+
+        } else {
+            // 간단 조회 (배경, 이모션 ID만 포함)
+            List<DiarySimpleResponse> simpleResponses = diaries.stream()
+                .map(DiarySimpleResponse::from)
+                .collect(Collectors.toList());
+
+            return PagedDiaryResponse.of(simpleResponses, page, size, total);
+        }
+    }
     
     // 일기 메타 수정
     @Transactional
@@ -185,9 +241,9 @@ public class DiaryService {
             diary.setEmotionContentId(request.getEmotionContentId());
         }
 
-        if (request.getIsShared() != null && !request.getIsShared().equals(diary.getIsShared())) {
-            updatedFields.put("isShared", new DiaryMetaUpdateResponse.UpdateField(diary.getIsShared(), request.getIsShared()));
-            diary.setIsShared(request.getIsShared());
+        if (request.getIsShared() != null && request.getIsShared() != diary.isShared()) {
+            updatedFields.put("shared", new DiaryMetaUpdateResponse.UpdateField(diary.isShared(), request.getIsShared()));
+            diary.setShared(request.getIsShared());
         }
 
         if (request.getOpenAt() != null && !request.getOpenAt().equals(diary.getOpenAt())) {
@@ -257,11 +313,11 @@ public class DiaryService {
         Diary diary = diaryRepository.findById(diaryId)
             .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-        if (Boolean.TRUE.equals(diary.getIsDeleted())) {
+        if (diary.isDeleted()) {
             throw new NoSuchElementException("존재하지 않는 일기입니다.");
         }
 
-        diary.setIsDeleted(true);
+        diary.setDeleted(true);
         diary.setUpdatedAt(Instant.now());
 
         diaryRepository.save(diary);

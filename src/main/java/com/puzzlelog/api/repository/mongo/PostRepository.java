@@ -11,6 +11,6 @@ import com.puzzlelog.api.dao.document.Post;
 
 @Repository
 public interface PostRepository extends MongoRepository<Post, String> {
-	Optional<Post> findById(String id);
-    List<Post> findByIsDeletedFalse();
+    Optional<Post> findById(String id);
+    List<Post> findByDeletedFalse();
 }

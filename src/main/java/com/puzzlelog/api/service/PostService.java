@@ -27,19 +27,19 @@ public class PostService {
 	        .userId(userId)
 	        .title(title)
 	        .content(content)
-	        .createdAt(LocalDateTime.now()) // 생성 시간 추가
+	        .createdAt(LocalDateTime.now())
 	        .likesCount(0)
-	        .isLiked(false)
-	        .isDeleted(false)
+	        .liked(false)
+	        .deleted(false)
 	        .build();
 	    
 	    return postRepository.save(post);
 	}
 
 	// 모든 게시글 조회 (삭제되지 않은 게시글만)
-    public List<Post> getAllPosts() {
-        return postRepository.findByIsDeletedFalse();
-    }
+	public List<Post> getAllPosts() {
+	    return postRepository.findByDeletedFalse();
+	}
 
     public Post toggleLike(String postId, String userId) {
         Post post = postRepository.findById(postId)

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import com.puzzlelog.api.service.AuthService;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/admin")
 public class AdminController {
     private final AuthService authService;
 

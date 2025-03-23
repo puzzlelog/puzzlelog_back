@@ -41,11 +41,11 @@ public class Piece {
     private String publicId;  // ✅ Cloudinary publicId 추가
 
     @Builder.Default
-    private Boolean isPrivate = false;
+    private boolean privatePiece = false;
 
     @CreatedDate
     private Instant createdAt; // 자동 시간 저장
 
     @Builder.Default
-    private Boolean isDeleted = false;
+    private boolean deleted = false;
 }

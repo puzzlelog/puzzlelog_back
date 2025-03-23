@@ -19,27 +19,23 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PagedDiaryResponse {
+public class PagedDiaryResponse<T> {
 
-    private List<DiarySimpleResponse> diaries;
+    private List<T> diaries;
     private Pagination pagination;
 
     // JPA 사용시 메서드
-    public static PagedDiaryResponse from(Page<Diary> page) {
-        return PagedDiaryResponse.builder()
-                .diaries(page.getContent().stream()
-                        .map(DiarySimpleResponse::from)
-                        .collect(Collectors.toList()))
+    public static <T> PagedDiaryResponse<T> from(Page<T> page) {
+        return PagedDiaryResponse.<T>builder()
+                .diaries(page.getContent())
                 .pagination(Pagination.from(page))
                 .build();
     }
     
-    // 몽고DB 사용시 메서드
-    public static PagedDiaryResponse of(List<Diary> diaries, int currentPage, int size, long totalElements) {
-        return PagedDiaryResponse.builder()
-                .diaries(diaries.stream()
-                        .map(DiarySimpleResponse::from)
-                        .collect(Collectors.toList()))
+    // MongoDB 사용시 메서드
+    public static <T> PagedDiaryResponse<T> of(List<T> diaries, int currentPage, int size, long totalElements) {
+        return PagedDiaryResponse.<T>builder()
+                .diaries(diaries)
                 .pagination(Pagination.of(currentPage, size, totalElements))
                 .build();
     }

@@ -29,9 +29,9 @@ public class Post {
     private LocalDateTime createdAt;
 
     @Builder.Default
-    private boolean isLiked = false;
+    private boolean liked = false;
     @Builder.Default
     private int likesCount = 0;
     @Builder.Default
-    private boolean isDeleted = false;
+    private boolean deleted = false;
 }
