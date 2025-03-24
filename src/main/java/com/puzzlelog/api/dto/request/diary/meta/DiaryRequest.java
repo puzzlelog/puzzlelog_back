@@ -32,7 +32,7 @@ public class DiaryRequest {
     private String emotionContentId;             // 감정 상태 콘텐츠 ID (선택)
     
     @Builder.Default
-    private Boolean isShared = false;   // 기본값 설정 (선택)
+    private Boolean shared = false;   // 기본값 설정 (선택)
 
     private String openAt;     // 날짜 ("2027-06-30" 형태) (타임캡슐용)
     private String timeZone;   // 사용자 타임존 (선택적, 없으면 한국으로 처리)

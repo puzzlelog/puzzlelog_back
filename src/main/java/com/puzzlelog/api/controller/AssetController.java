@@ -1,19 +1,28 @@
 package com.puzzlelog.api.controller;
 
-import com.puzzlelog.api.dao.document.Asset;
-import com.puzzlelog.api.dto.response.common.ApiResponse;
-import com.puzzlelog.api.service.AuthService;
-import com.puzzlelog.api.service.AssetService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import com.puzzlelog.api.dao.document.Asset;
+import com.puzzlelog.api.dto.response.asset.AssetResponse;
+import com.puzzlelog.api.dto.response.common.ApiResponse;
+import com.puzzlelog.api.service.AssetService;
+import com.puzzlelog.api.service.AuthService;
 
 @RestController
-@RequestMapping("/admin/assets")
+@RequestMapping("/assets")
 public class AssetController {
 
     @Autowired
@@ -59,10 +68,9 @@ public class AssetController {
 
     // 특정 ID의 자산 조회
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Asset>> getAssetById(@PathVariable String id) {
-        return assetService.getAssetById(id)
-                .map(asset -> ResponseEntity.ok(ApiResponse.success(asset, "자산 조회 성공")))
-                .orElse(ResponseEntity.status(404).body(ApiResponse.fail("자산을 찾을 수 없습니다.")));
+    public ResponseEntity<ApiResponse<AssetResponse>> getAsset(@PathVariable String id) {
+        AssetResponse assetResponse = assetService.getAssetById(id);
+        return ResponseEntity.ok(ApiResponse.success(assetResponse, "자산 조회 성공"));
     }
 
     // 자산 논리적 삭제 (관리자만 가능)

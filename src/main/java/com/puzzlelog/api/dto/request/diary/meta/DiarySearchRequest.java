@@ -20,7 +20,7 @@ public class DiarySearchRequest {
     private String title;
     private String emotionContentId;
     private String backgroundContentId;
-    private Boolean isShared;
+    private Boolean shared;
     private Boolean openAt; // true: 타임캡슐만, false: 일반 일기만, null: 전체
     
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -37,6 +37,6 @@ public class DiarySearchRequest {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate updatedAtTo;
-    private Boolean isDeleted;
+    private Boolean deleted;
     private Boolean today; // 오늘 생성된 일기만 조회
 }

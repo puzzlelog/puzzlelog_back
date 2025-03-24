@@ -87,21 +87,15 @@ public class PieceController {
 	    @RequestParam(defaultValue = "0") int page,
 	    @RequestParam(defaultValue = "20") int size
 	) {
-	    PagedPieceResponse response;
-
-	    if (request.hasNoCondition()) {
-	        response = pieceService.getPieces(page, size);
-	        return ResponseEntity.ok(ApiResponse.success(response, "전체 조각 조회 성공"));
-	    }
-
-	    response = pieceService.searchPieces(request, page, size);
+	    PagedPieceResponse response = pieceService.searchPieces(request, page, size);
 
 	    if (response.getPieces().isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
 	            .body(ApiResponse.fail("조건에 맞는 조각이 없습니다."));
 	    }
 
-	    return ResponseEntity.ok(ApiResponse.success(response, "조각 검색 성공"));
+	    String message = request.hasNoCondition() ? "전체 조각 조회 성공" : "조각 검색 성공";
+	    return ResponseEntity.ok(ApiResponse.success(response, message));
 	}
 
 	// 조각 수정

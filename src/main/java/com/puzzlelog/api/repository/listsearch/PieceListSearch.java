@@ -30,12 +30,12 @@ public class PieceListSearch implements ListSearch<PieceSearchRequest, Criteria>
             criteria.and("tags").in(request.getTags());
         }
 
-        if (request.getIsPrivate() != null) {
-            criteria.and("isPrivate").is(request.getIsPrivate());
+        if (request.getPrivatePiece() != null) {
+            criteria.and("privatePiece").is(request.getPrivatePiece());
         }
 
-        if (request.getIsDeleted() != null) {
-            criteria.and("isDeleted").is(request.getIsDeleted());
+        if (request.getDeleted() != null) {
+            criteria.and("deleted").is(request.getDeleted());
         }
 
         if (request.getCreatedAtFrom() != null || request.getCreatedAtTo() != null) {

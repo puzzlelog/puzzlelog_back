@@ -17,7 +17,7 @@ public class AlbumResponse {
 	private String title;
 	private List<String> diaryId;
 	private boolean purchased;
-	private boolean isDeleted;
+	private boolean deleted;
     private Date createdAt;
 	
 	public AlbumResponse(Album album) {
@@ -26,7 +26,7 @@ public class AlbumResponse {
         this.title = album.getTitle();
         this.diaryId = album.getDiaryId();
         this.purchased = album.isPurchased();
-        this.isDeleted = album.isDeleted();
+        this.deleted = album.isDeleted();
         this.createdAt = album.getCreatedAt();
 	}
 }

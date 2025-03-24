@@ -33,12 +33,12 @@ public class DiaryListSearch implements ListSearch<DiarySearchRequest, Criteria>
             criteria.and("backgroundContentId").is(request.getBackgroundContentId());
         }
 
-        if (request.getIsShared() != null) {
-            criteria.and("isShared").is(request.getIsShared());
+        if (request.getShared() != null) {
+            criteria.and("shared").is(request.getShared());
         }
 
-        if (request.getIsDeleted() != null) {
-            criteria.and("isDeleted").is(request.getIsDeleted());
+        if (request.getDeleted() != null) {
+            criteria.and("deleted").is(request.getDeleted());
         }
 
         if (request.getOpenAt() != null) {
