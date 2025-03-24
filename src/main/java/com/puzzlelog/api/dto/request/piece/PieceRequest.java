@@ -32,5 +32,5 @@ public class PieceRequest {
     private GeoJsonPoint location;
 
     @Builder.Default
-    private Boolean isPrivate = false;
+    private Boolean privatePiece = false;
 }

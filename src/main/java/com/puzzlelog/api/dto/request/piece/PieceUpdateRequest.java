@@ -21,5 +21,5 @@ public class PieceUpdateRequest {
 
     private GeoJsonPoint location; // 선택적
 
-    private Boolean isPrivate; // 선택적
+    private Boolean privatePiece; // 선택적
 }

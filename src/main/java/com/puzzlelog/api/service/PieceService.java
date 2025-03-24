@@ -101,7 +101,7 @@ public class PieceService {
         	    .content(request.getContent())
         	    .tags(request.getTags())
         	    .location(request.getLocation())
-        	    .privatePiece(request.getIsPrivate() != null ? request.getIsPrivate() : false)
+        	    .privatePiece(request.getPrivatePiece() != null ? request.getPrivatePiece() : false)
         	    .mediaId(mediaId)
         	    .publicId(publicId)
         	    .deleted(false)
@@ -126,24 +126,23 @@ public class PieceService {
         return PieceResponse.from(piece);
     }
     
-    // 아무 것도 입력하지 않았을 때
-    @Transactional(readOnly = true)
-    public PagedPieceResponse getPieces(int page, int size) {
-        Query query = new Query(Criteria.where("isDeleted").is(false))
-            .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-
-        List<Piece> pieces = mongoTemplate.find(query, Piece.class);
-        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Piece.class);
-
-        return PagedPieceResponse.of(pieces, page, size, total);
-    }
-
-    // 목록 조회 메서드 (페이징 포함)
+    // 목록 조회 메서드
     @Transactional(readOnly = true)
     public PagedPieceResponse searchPieces(PieceSearchRequest request, int page, int size) {
-        Criteria criteria = pieceListSearch.buildSearch(request);
+        Criteria criteria;
+
+        if (request.hasNoCondition()) {
+            criteria = Criteria.where("deleted").is(false);
+        } else {
+            criteria = pieceListSearch.buildSearch(request);
+            criteria = new Criteria().andOperator(
+                criteria,
+                Criteria.where("deleted").is(false)
+            );
+        }
+
         Query query = new Query(criteria)
-                        .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+            .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
 
         List<Piece> pieces = mongoTemplate.find(query, Piece.class);
         long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Piece.class);
@@ -238,9 +237,9 @@ public class PieceService {
             piece.setLocation(request.getLocation());
         }
 
-        if (request.getIsPrivate() != null && !request.getIsPrivate().equals(piece.isPrivatePiece())) {
-            updatedFields.put("privatePiece", new PieceUpdateResponse.UpdateField(piece.isPrivatePiece(), request.getIsPrivate()));
-            piece.setPrivatePiece(request.getIsPrivate());
+        if (request.getPrivatePiece() != null && !request.getPrivatePiece().equals(piece.isPrivatePiece())) {
+            updatedFields.put("privatePiece", new PieceUpdateResponse.UpdateField(piece.isPrivatePiece(), request.getPrivatePiece()));
+            piece.setPrivatePiece(request.getPrivatePiece());
         }
     }
 
@@ -268,11 +267,11 @@ public class PieceService {
         Piece piece = pieceRepository.findById(pieceId)
             .orElseThrow(() -> new RuntimeException("존재하지 않는 조각입니다."));
 
-        if (piece.isDeleted()) { // ✅ 수정됨
+        if (piece.isDeleted()) {
             throw new RuntimeException("존재하지 않는 조각입니다.");
         }
 
-        piece.setDeleted(true);  // ✅ 수정됨
+        piece.setDeleted(true);
         pieceRepository.save(piece);
 
         return PieceDeleteResponse.builder()

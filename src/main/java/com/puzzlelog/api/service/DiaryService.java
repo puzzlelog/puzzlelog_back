@@ -76,7 +76,7 @@ public class DiaryService {
         	    .backgroundContentId(request.getBackgroundContentId())
         	    .themeColor(request.getThemeColor())
         	    .emotionContentId(request.getEmotionContentId())
-        	    .shared(Optional.ofNullable(request.getIsShared()).orElse(false))
+        	    .shared(Optional.ofNullable(request.getShared()).orElse(false))
         	    .openAt(openAtInstant)
         	    .createdAt(Instant.now())
         	    .updatedAt(Instant.now())
@@ -241,9 +241,9 @@ public class DiaryService {
             diary.setEmotionContentId(request.getEmotionContentId());
         }
 
-        if (request.getIsShared() != null && request.getIsShared() != diary.isShared()) {
-            updatedFields.put("shared", new DiaryMetaUpdateResponse.UpdateField(diary.isShared(), request.getIsShared()));
-            diary.setShared(request.getIsShared());
+        if (request.getShared() != null && request.getShared() != diary.isShared()) {
+            updatedFields.put("shared", new DiaryMetaUpdateResponse.UpdateField(diary.isShared(), request.getShared()));
+            diary.setShared(request.getShared());
         }
 
         if (request.getOpenAt() != null && !request.getOpenAt().equals(diary.getOpenAt())) {

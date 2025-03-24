@@ -18,6 +18,6 @@ public class DiaryMetaUpdateRequest {
     private String backgroundContentId;
     private String themeColor;
     private String emotionContentId;
-    private Boolean isShared;
+    private Boolean shared;
     private Instant openAt;
 }

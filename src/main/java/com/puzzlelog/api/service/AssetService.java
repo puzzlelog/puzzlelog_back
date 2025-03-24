@@ -1,15 +1,18 @@
 package com.puzzlelog.api.service;
 
-import com.puzzlelog.api.dao.document.Asset;
-import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
-import com.puzzlelog.api.repository.mongo.AssetRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.puzzlelog.api.dao.document.Asset;
+import com.puzzlelog.api.dto.response.asset.AssetResponse;
+import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
+import com.puzzlelog.api.repository.mongo.AssetRepository;
 
 @Service
 public class AssetService {
@@ -59,8 +62,12 @@ public class AssetService {
     }
 
     // 특정 ID의 삭제되지 않은 자산 조회
-    public Optional<Asset> getAssetById(String id) {
-        return assetRepository.findByIdAndDeletedFalse(id);
+    @Transactional(readOnly = true)
+    public AssetResponse getAssetById(String id) {
+        Asset asset = assetRepository.findByIdAndDeletedFalse(id)
+            .orElseThrow(() -> new RuntimeException("자산을 찾을 수 없습니다."));
+
+        return AssetResponse.from(asset);
     }
 
     // 에셋 논리적 삭제 (isDeleted = true로 변경)
