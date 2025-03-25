@@ -17,6 +17,7 @@ public class DotenvConfig {
         System.setProperty("SPRING_DATA_MONGODB_URI", dotenv.get("SPRING_DATA_MONGODB_URI"));
         System.setProperty("CLOUDINARY_URL", dotenv.get("CLOUDINARY_URL"));
         System.setProperty("SERVER_PORT", dotenv.get("SERVER_PORT", "8080"));
+        System.setProperty("JWT_SECRET", dotenv.get("JWT_SECRET"));
 
         // 디버깅용 출력
         System.out.println("✅ [DotenvConfig] 환경 변수 로드 완료");
