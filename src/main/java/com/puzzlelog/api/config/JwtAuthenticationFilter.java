@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String role = jwtProvider.getRole(token);
 
                     List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority(role) // 이미 JwtProvider에서 ROLE_ 접두사 추가됨
+                    		new SimpleGrantedAuthority("ROLE_" + role)  // 이미 JwtProvider에서 ROLE_ 접두사 추가됨
                     );
 
                     UsernamePasswordAuthenticationToken auth =

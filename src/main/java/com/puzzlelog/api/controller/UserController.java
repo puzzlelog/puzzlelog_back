@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.puzzlelog.api.config.JwtProvider;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
 import com.puzzlelog.api.dto.request.auth.SignupRequest;
