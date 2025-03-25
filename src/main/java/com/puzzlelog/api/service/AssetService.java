@@ -24,17 +24,20 @@ public class AssetService {
     private CloudinaryService cloudinaryService; // ✅ Cloudinary 업로드 서비스 사용
 
     // 에셋 추가 (multipart 지원)
-    public Asset addAsset(String name, String type, MultipartFile file) {
+    public Asset addAsset(String name, String type, String tag, MultipartFile file) {
         if (name.isBlank() || type.isBlank()) {
             throw new IllegalArgumentException("에셋 이름과 타입은 필수입니다.");
         }
 
-        String imageUrl = null;
+        String mediaId = null;
+        String publicId = null;
+        
         if (file != null && !file.isEmpty()) {
             try {
-                // ✅ Cloudinary에 업로드하고 URL 받기
+                // Cloudinary에 업로드하고 URL 및 publicId 받기
                 CloudinaryUploadResponse uploadResponse = cloudinaryService.uploadToCloud(file);
-                imageUrl = uploadResponse.getUrl();
+                mediaId = uploadResponse.getUrl();
+                publicId = uploadResponse.getPublicId(); // publicId도 저장
             } catch (Exception e) {
                 throw new RuntimeException("이미지 업로드 실패: " + e.getMessage(), e);
             }
@@ -44,12 +47,15 @@ public class AssetService {
                 .id(UUID.randomUUID().toString()) // MongoDB용 UUID 생성
                 .name(name)
                 .type(type)
-                .imageUrl(imageUrl)
+                .mediaId(mediaId)
+                .publicId(publicId)
+                .tags(tag != null && !tag.isBlank() ? List.of(tag) : List.of()) // tag를 List로 변환
                 .deleted(false)
                 .build();
 
         return assetRepository.save(asset);
     }
+
 
     // 삭제되지 않은 모든 자산 조회
     public List<Asset> getAllAssets() {

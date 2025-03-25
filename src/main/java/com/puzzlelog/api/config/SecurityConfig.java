@@ -51,17 +51,17 @@ public class SecurityConfig {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-                // Preflight 요청(OPTIONS) 허용
-                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // 회원가입, 로그인은 모두 허용
-                .antMatchers(HttpMethod.POST, "/users").permitAll()
-                .antMatchers(HttpMethod.POST, "/users/login").permitAll()
-                // 스티커 관련 API (관리자 전용)
-                .antMatchers("/api/admin/stickers/**").hasRole("ADMIN")
-                // 그 외 모든 요청은 인증 필요
-                .anyRequest().authenticated();
+            .anyRequest().permitAll(); // 모든 요청 허용
+//                // Preflight 요청(OPTIONS) 허용
+//                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+//                // 회원가입, 로그인은 모두 허용
+//                .antMatchers(HttpMethod.POST, "/users").permitAll()
+//                .antMatchers(HttpMethod.POST, "/users/login").permitAll()
+//                // 그 외 모든 요청은 인증 필요
+//                .anyRequest().authenticated();
 
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        // 필터 임시 주석
+//        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.headers().frameOptions().sameOrigin();
 
         return http.build();
