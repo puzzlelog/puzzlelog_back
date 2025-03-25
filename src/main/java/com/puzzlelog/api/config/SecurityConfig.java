@@ -1,6 +1,7 @@
 package com.puzzlelog.api.config;
 
 import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,19 +17,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-// JwtAuthenticationFilter 클래스를 import 합니다.
-import com.puzzlelog.api.config.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    
-    // 생성자 주입 (생성자 없이 @Autowired로도 가능)
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,7 +53,7 @@ public class SecurityConfig {
                 .antMatchers(HttpMethod.POST, "/users").permitAll()
                 .antMatchers(HttpMethod.POST, "/users/login").permitAll()
                 // 스티커 관련 API (관리자 전용)
-                .antMatchers("/api/admin/stickers/**").hasRole("ADMIN")
+//                .antMatchers("/api/assets/**").hasRole("ADMIN")
                 // 그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated();
 
