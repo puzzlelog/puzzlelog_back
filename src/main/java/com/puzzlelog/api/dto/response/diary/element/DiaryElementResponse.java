@@ -20,6 +20,9 @@ public class DiaryElementResponse {
     private String id;
     private String elementType;
     private String contentId; 
+    
+    private ElementContentResponse content; // 상세정보 추가
+
     private String drawingData;
     private String date;
     private List<Double> position;
@@ -28,13 +31,14 @@ public class DiaryElementResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    private ElementDecorationResponse decoration; // 일단 null로 반환, 나중에 사용 예정
-    
-    public static DiaryElementResponse from(DiaryElement element) {
+    private ElementDecorationResponse decoration; // 현재는 null로 유지
+
+    public static DiaryElementResponse from(DiaryElement element, ElementContentResponse content) {
         return DiaryElementResponse.builder()
             .id(element.getId())
             .elementType(element.getElementType())
             .contentId(element.getContentId())
+            .content(content) // 상세 정보 추가
             .drawingData(element.getDrawingData())
             .date(element.getDate())
             .position(element.getPosition())
@@ -42,7 +46,7 @@ public class DiaryElementResponse {
             .rotation(element.getRotation())
             .createdAt(element.getCreatedAt())
             .updatedAt(element.getUpdatedAt())
-            .decoration(null) // 현재는 null (추후 구현 예정)
+            .decoration(null) // 추후 구현 예정
             .build();
     }
 }

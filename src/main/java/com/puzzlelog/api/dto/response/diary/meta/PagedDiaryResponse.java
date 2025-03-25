@@ -1,11 +1,8 @@
 package com.puzzlelog.api.dto.response.diary.meta;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
-
-import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dto.response.common.Pagination;
 
 import lombok.AllArgsConstructor;

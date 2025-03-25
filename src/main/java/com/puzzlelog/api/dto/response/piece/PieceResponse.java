@@ -22,7 +22,7 @@ public class PieceResponse {
     private String id;
     private String userId;
     private String type;
-    private String content;
+    private String text;
     private List<String> tags;
     private GeoJsonPoint location;
     private String mediaId;
@@ -35,7 +35,7 @@ public class PieceResponse {
                 .id(piece.getId())
                 .userId(piece.getUserId())
                 .type(piece.getType())
-                .content(piece.getContent())
+                .text(piece.getText())
                 .tags(piece.getTags())
                 .location(piece.getLocation())
                 .mediaId(piece.getMediaId())

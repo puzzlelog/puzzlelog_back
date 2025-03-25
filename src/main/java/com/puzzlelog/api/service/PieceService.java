@@ -56,8 +56,8 @@ public class PieceService {
             throw new RuntimeException("타입은 필수입니다.");
         }
         
-        if ("TEXT".equals(request.getType()) && (request.getContent() == null || request.getContent().trim().isEmpty())) {
-            throw new RuntimeException("텍스트 타입의 경우 내용(content)은 필수입니다.");
+        if ("TEXT".equals(request.getType()) && (request.getText() == null || request.getText().trim().isEmpty())) {
+            throw new RuntimeException("텍스트 타입의 경우 내용(text)은 필수입니다.");
         }
 
         // 사용자 존재 여부 및 상태 체크 (추가된 부분)
@@ -98,7 +98,7 @@ public class PieceService {
         Piece piece = Piece.builder()
         	    .userId(request.getUserId())
         	    .type(request.getType())
-        	    .content(request.getContent())
+        	    .text(request.getText())
         	    .tags(request.getTags())
         	    .location(request.getLocation())
         	    .privatePiece(request.getPrivatePiece() != null ? request.getPrivatePiece() : false)
@@ -189,11 +189,11 @@ public class PieceService {
         deleteExistingMediaIfExists(piece);
 
         if ("TEXT".equals(request.getType())) {
-            if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+            if (request.getText() == null || request.getText().trim().isEmpty()) {
                 throw new RuntimeException("TEXT 타입으로 변경 시 내용은 필수입니다.");
             }
-            updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
-            piece.setContent(request.getContent());
+            updatedFields.put("text", new PieceUpdateResponse.UpdateField(piece.getText(), request.getText()));
+            piece.setText(request.getText());
             piece.setMediaId(null);
         } else {
             if (file == null) throw new RuntimeException("파일이 필수입니다.");
@@ -203,7 +203,7 @@ public class PieceService {
             
             updatedFields.put("mediaId", new PieceUpdateResponse.UpdateField(piece.getMediaId(), newMediaId));
             piece.setMediaId(newMediaId);
-            piece.setContent(null);
+            piece.setText(null);
         }
     }
 
@@ -221,10 +221,10 @@ public class PieceService {
     private void updateAdditionalFields(Piece piece, PieceUpdateRequest request,
             Map<String, PieceUpdateResponse.UpdateField> updatedFields) {
     	
-		if (request.getContent() != null && "TEXT".equals(piece.getType())
-			&& !request.getContent().equals(piece.getContent())) {
-			updatedFields.put("content", new PieceUpdateResponse.UpdateField(piece.getContent(), request.getContent()));
-			piece.setContent(request.getContent());
+		if (request.getText() != null && "TEXT".equals(piece.getType())
+			&& !request.getText().equals(piece.getText())) {
+			updatedFields.put("text", new PieceUpdateResponse.UpdateField(piece.getText(), request.getText()));
+			piece.setText(request.getText());
 		}
 
         if (request.getTags() != null && !request.getTags().equals(piece.getTags())) {

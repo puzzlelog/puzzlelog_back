@@ -1,11 +1,9 @@
 package com.puzzlelog.api.dto.response.asset;
 
 import com.puzzlelog.api.dao.document.Asset;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,14 +14,22 @@ public class AssetResponse {
     private String id;
     private String name;
     private String type;
-    private String imageUrl;
+    private String mediaId;
+    private String publicId;
+    private List<String> tags;
 
     public static AssetResponse from(Asset asset) {
+        if (asset == null) {
+            return null;
+        }
+
         return AssetResponse.builder()
-                .id(asset.getId())
-                .name(asset.getName())
-                .type(asset.getType())
-                .imageUrl(asset.getImageUrl())
-                .build();
+            .id(asset.getId())
+            .name(asset.getName())
+            .type(asset.getType())
+            .mediaId(asset.getMediaId())
+            .publicId(asset.getPublicId())
+            .tags(asset.getTags())
+            .build();
     }
 }
