@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.puzzlelog.api.dao.document.Asset;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dao.document.DiaryElement;
 import com.puzzlelog.api.dao.document.ElementDecoration;
@@ -25,7 +28,9 @@ import com.puzzlelog.api.dto.request.diary.element.DiaryElementUpdateRequest;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementDeleteResponse;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementResponse;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementUpdateResponse;
+import com.puzzlelog.api.dto.response.diary.element.ElementContentResponse;
 import com.puzzlelog.api.dto.response.diary.element.PagedDiaryElementResponse;
+import com.puzzlelog.api.repository.mongo.AssetRepository;
 import com.puzzlelog.api.repository.mongo.DiaryElementRepository;
 import com.puzzlelog.api.repository.mongo.DiaryRepository;
 import com.puzzlelog.api.repository.mongo.PieceRepository;
@@ -39,6 +44,7 @@ public class DiaryElementService {
 	private final DiaryRepository diaryRepository;
 	private final  DiaryElementRepository diaryElementRepository;
 	private final PieceRepository pieceRepository;
+	private final AssetRepository assetRepository;
 
 	// 요소 생성
 	@Transactional
@@ -80,7 +86,20 @@ public class DiaryElementService {
 	    diary.setUpdatedAt(Instant.now());
 	    diaryRepository.save(diary);
 
-	    return DiaryElementResponse.from(element);
+	    ElementContentResponse content;
+
+	    // 생성된 요소의 상세 정보를 가져옴
+	    if ("PIECE".equals(request.getElementType())) {
+	        Piece piece = pieceRepository.findById(request.getContentId())
+	            .orElseThrow(() -> new NoSuchElementException("해당 조각이 없습니다."));
+	        content = ElementContentResponse.from(piece);
+	    } else {
+	        Asset asset = assetRepository.findById(request.getContentId())
+	            .orElseThrow(() -> new NoSuchElementException("해당 에셋이 없습니다."));
+	        content = ElementContentResponse.from(asset);
+	    }
+
+	    return DiaryElementResponse.from(element, content);
 	}
 	
 	// 단일 요소 조회
@@ -96,8 +115,24 @@ public class DiaryElementService {
 	    DiaryElement element = diaryElementRepository.findByIdAndDeletedFalse(elementId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 요소입니다."));
 
-	    return DiaryElementResponse.from(element);
+	    // contentId를 기반으로 Asset 또는 Piece 조회
+	    ElementContentResponse content = findContentByIdAndType(element.getContentId(), element.getElementType());
+
+	    return DiaryElementResponse.from(element, content);
 	}
+
+	private ElementContentResponse findContentByIdAndType(String contentId, String elementType) {
+	    if ("STICKER".equals(elementType) || "BACKGROUND".equals(elementType) || "EMOTION".equals(elementType)) {
+	        Asset asset = assetRepository.findByIdAndDeletedFalse(contentId)
+	            .orElseThrow(() -> new NoSuchElementException("존재하지 않는 에셋입니다."));
+	        return ElementContentResponse.from(asset);
+	    } else {
+	        Piece piece = pieceRepository.findByIdAndDeletedFalse(contentId)
+	            .orElseThrow(() -> new NoSuchElementException("존재하지 않는 조각입니다."));
+	        return ElementContentResponse.from(piece);
+	    }
+	}
+
 	
 	// 요소 목록 조회
 	@Transactional(readOnly = true)
@@ -105,7 +140,7 @@ public class DiaryElementService {
 	    Diary diary = diaryRepository.findById(diaryId)
 	        .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
-	    if (diary.isDeleted()) { // ✅ 수정됨
+	    if (diary.isDeleted()) {
 	        throw new NoSuchElementException("존재하지 않는 일기입니다.");
 	    }
 
@@ -120,18 +155,41 @@ public class DiaryElementService {
 	    Page<DiaryElement> elementPage;
 
 	    if (request.getElementType() != null && !request.getElementType().isBlank()) {
-	        elementPage = diaryElementRepository.findAllByDiaryIdAndElementTypeAndDeletedFalse(diaryId, request.getElementType(), pageable); // ✅ 수정됨
+	        elementPage = diaryElementRepository.findAllByDiaryIdAndElementTypeAndDeletedFalse(diaryId, request.getElementType(), pageable);
 	    } else {
-	        elementPage = diaryElementRepository.findAllByDiaryIdAndDeletedFalse(diaryId, pageable); // ✅ 수정됨
+	        elementPage = diaryElementRepository.findAllByDiaryIdAndDeletedFalse(diaryId, pageable);
 	    }
+
+	    // 🔥 contentId로 Asset과 Piece를 조회해 contentMap을 생성 (상기 코드 참고)
+	    List<String> contentIds = elementPage.getContent().stream()
+	        .map(DiaryElement::getContentId)
+	        .distinct()
+	        .collect(Collectors.toList());
+
+	    List<Asset> assets = StreamSupport.stream(assetRepository.findAllById(contentIds).spliterator(), false)
+	    	    .filter(asset -> !asset.isDeleted())
+	    	    .collect(Collectors.toList());
+
+	    Set<String> assetIds = assets.stream().map(Asset::getId).collect(Collectors.toSet());
+	    List<String> remainingIds = contentIds.stream().filter(id -> !assetIds.contains(id)).collect(Collectors.toList());
+
+	    List<Piece> pieces = StreamSupport.stream(pieceRepository.findAllById(remainingIds).spliterator(), false)
+	    	    .filter(piece -> !piece.isDeleted())
+	    	    .collect(Collectors.toList());
+
+	    Map<String, ElementContentResponse> contentMap = new HashMap<>();
+	    assets.forEach(asset -> contentMap.put(asset.getId(), ElementContentResponse.from(asset)));
+	    pieces.forEach(piece -> contentMap.put(piece.getId(), ElementContentResponse.from(piece)));
 
 	    return PagedDiaryElementResponse.of(
 	        elementPage.getContent(),
+	        contentMap,
 	        request.getPage(),
 	        request.getSize(),
 	        elementPage.getTotalElements()
 	    );
 	}
+
 	
 	// 요소 수정
 	@Transactional

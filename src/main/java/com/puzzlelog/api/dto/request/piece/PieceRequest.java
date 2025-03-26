@@ -25,7 +25,7 @@ public class PieceRequest {
     @NotNull(message = "타입은 필수입니다.")
     private String type; // TEXT, IMAGE, VIDEO, AUDIO
 
-    private String content;  // Type이 TEXT일 때 필수
+    private String text;  // Type이 TEXT일 때 필수
     
     private List<String> tags;
 

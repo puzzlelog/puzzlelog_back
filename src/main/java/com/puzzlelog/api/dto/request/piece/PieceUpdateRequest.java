@@ -15,7 +15,7 @@ public class PieceUpdateRequest {
 
     private String type; // "TEXT", "IMAGE", "VIDEO", "AUDIO"
 
-    private String content; // TEXT 타입 시 필수
+    private String text; // TEXT 타입 시 필수
 
     private List<String> tags; // 선택적
 
