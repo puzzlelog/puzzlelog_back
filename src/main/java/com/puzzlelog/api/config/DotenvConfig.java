@@ -1,4 +1,4 @@
- package com.puzzlelog.api.config;
+package com.puzzlelog.api.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Configuration;
