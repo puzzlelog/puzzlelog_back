@@ -39,4 +39,6 @@ public class DiarySearchRequest {
     private LocalDate updatedAtTo;
     private Boolean deleted;
     private Boolean today; // 오늘 생성된 일기만 조회
+    
+    private String participants;
 }

@@ -40,4 +40,6 @@ public class DiaryRequest {
     @NotEmpty(message = "일기에는 최소 하나 이상의 요소가 있어야 합니다.")
     @Valid
     private List<DiaryElementRequest> elements;  // 최소 1개 이상 필수
+    
+    private List<String> participants; // 참가자 초대단계에서 설정됨
 }

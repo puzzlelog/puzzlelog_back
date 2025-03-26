@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -62,7 +64,6 @@ public class DiaryService {
     // 일기 생성
     @Transactional
     public DiaryResponse createDiary(DiaryRequest request) {
-
         // [타임캡슐 처리] openAt 날짜와 timeZone 기준으로 Instant 처리
         Instant openAtInstant = null;
         if (request.getOpenAt() != null && !request.getOpenAt().isBlank()) {
@@ -76,21 +77,30 @@ public class DiaryService {
         }
 
         // [일기 생성] Diary 객체 생성 및 저장
-        Diary diary = Diary.builder()
-        	    .userId(request.getUserId())
-        	    .title(request.getTitle())
-        	    .backgroundContentId(request.getBackgroundContentId())
-        	    .themeColor(request.getThemeColor())
-        	    .emotionContentId(request.getEmotionContentId())
-        	    .shared(Optional.ofNullable(request.getShared()).orElse(false))
-        	    .openAt(openAtInstant)
-        	    .createdAt(Instant.now())
-        	    .updatedAt(Instant.now())
-        	    .deleted(false)
-        	    .build();
+        // participants 리스트에 userId를 추가
+        List<String> participants = new ArrayList<>(
+            request.getParticipants() != null ? request.getParticipants() : Collections.emptyList()
+        );
+        if (!participants.contains(request.getUserId())) {
+            participants.add(request.getUserId()); // 요청을 보낸 사람(userId)을 participants에 추가
+        }
 
-        	diaryRepository.save(diary);
-        
+        Diary diary = Diary.builder()
+                .userId(request.getUserId())
+                .title(request.getTitle())
+                .backgroundContentId(request.getBackgroundContentId())
+                .themeColor(request.getThemeColor())
+                .emotionContentId(request.getEmotionContentId())
+                .shared(Optional.ofNullable(request.getShared()).orElse(false))
+                .openAt(openAtInstant)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .deleted(false)
+                .participants(participants) // 수정된 participants 리스트 사용
+                .build();
+
+        diaryRepository.save(diary);
+
         // [유효성 검사] 요소 타입과 contentId/drawingData 검증 (간결화 버전)
         final List<String> allowedTypes = List.of("TEXT", "IMAGE", "AUDIO", "VIDEO", "STICKER", "DRAWING", "DATE");
 
@@ -99,212 +109,224 @@ public class DiaryService {
                 throw new IllegalArgumentException("허용되지 않는 요소 타입입니다: " + elementRequest.getElementType());
             }
             if (!elementRequest.isValidByType()) {
-                throw new IllegalArgumentException("요소 타입과 필수 데이터가 올바르지 않습니다: " 
-                                                   + elementRequest.getElementType());
+                throw new IllegalArgumentException("요소 타입과 필수 데이터가 올바르지 않습니다: "
+                        + elementRequest.getElementType());
             }
         });
 
         // [요소 생성] DiaryElement 객체 생성 및 저장 후 Element ID 리스트 반환
         List<String> savedElementIds = request.getElements().stream()
-            .peek(elementRequest -> {
-                if (!elementRequest.isValidByType()) {
-                    throw new IllegalArgumentException("요소 타입과 contentId 또는 drawingData가 올바르지 않습니다: " + elementRequest.getElementType());
-                }
-            })
-            .map(elementRequest -> {
-                DiaryElement element = DiaryElement.builder()
-                        .diaryId(diary.getId())
-                        .elementType(elementRequest.getElementType())
-                        .contentId(elementRequest.getContentId())
-                        .drawingData(elementRequest.getDrawingData())
-                        .position(Optional.ofNullable(elementRequest.getPosition()).orElse(List.of(0.0, 0.0)))
-                        .scale(Optional.ofNullable(elementRequest.getScale()).orElse(1.0))
-                        .rotation(Optional.ofNullable(elementRequest.getRotation()).orElse(0.0))
-                        .createdAt(Instant.now())
-                        .updatedAt(Instant.now())
-                        .build();
+                .peek(elementRequest -> {
+                    if (!elementRequest.isValidByType()) {
+                        throw new IllegalArgumentException("요소 타입과 contentId 또는 drawingData가 올바르지 않습니다: " + elementRequest.getElementType());
+                    }
+                })
+                .map(elementRequest -> {
+                    DiaryElement element = DiaryElement.builder()
+                            .diaryId(diary.getId())
+                            .elementType(elementRequest.getElementType())
+                            .contentId(elementRequest.getContentId())
+                            .drawingData(elementRequest.getDrawingData())
+                            .position(Optional.ofNullable(elementRequest.getPosition()).orElse(List.of(0.0, 0.0)))
+                            .scale(Optional.ofNullable(elementRequest.getScale()).orElse(1.0))
+                            .rotation(Optional.ofNullable(elementRequest.getRotation()).orElse(0.0))
+                            .createdAt(Instant.now())
+                            .updatedAt(Instant.now())
+                            .build();
 
-                diaryElementRepository.save(element);
-                return element.getId(); // ✅ 여기 변경!
-            })
-            .collect(Collectors.toList());
+                    diaryElementRepository.save(element);
+                    return element.getId();
+                })
+                .collect(Collectors.toList());
 
         diary.setElementIds(savedElementIds);
         diaryRepository.save(diary); // 업데이트된 Diary 저장
 
         return DiaryResponse.from(diary);
     }
-    
+
     // 개별 일기 상세 조회 (수정시 불러올 때 사용)
     @Transactional(readOnly = true)
     public DiaryDetailResponse getDiary(String diaryId) {
         Diary diary = diaryRepository.findById(diaryId)
-            .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
         // Diary 요소 조회
         List<DiaryElement> elements = diaryElementRepository.findAllByDiaryIdAndDeletedFalse(diaryId);
 
         // diary.elementIds의 순서대로 elements 정렬
         Map<String, DiaryElement> elementMap = elements.stream()
-            .collect(Collectors.toMap(DiaryElement::getId, e -> e));
+                .collect(Collectors.toMap(DiaryElement::getId, e -> e));
 
         List<DiaryElement> sortedElements = diary.getElementIds().stream()
-            .map(elementMap::get)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+                .map(elementMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        // ✅ 배경과 이모션 Asset 조회 추가
+        // 배경과 이모션 Asset 조회 추가
         Asset background = diary.getBackgroundContentId() != null ?
-            assetRepository.findByIdAndDeletedFalse(diary.getBackgroundContentId()).orElse(null) : null;
+                assetRepository.findByIdAndDeletedFalse(diary.getBackgroundContentId()).orElse(null) : null;
 
         Asset emotion = diary.getEmotionContentId() != null ?
-            assetRepository.findByIdAndDeletedFalse(diary.getEmotionContentId()).orElse(null) : null;
+                assetRepository.findByIdAndDeletedFalse(diary.getEmotionContentId()).orElse(null) : null;
 
-        // DiaryElement에서 contentId 추출
-        List<String> contentIds = sortedElements.stream()
-            .map(DiaryElement::getContentId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+// DiaryElement에서 contentId 추출
+List<String> contentIds = sortedElements.stream()
+    .map(DiaryElement::getContentId)
+    .filter(Objects::nonNull)
+    .distinct()
+    .collect(Collectors.toList());
 
-        // ✅ Assets 조회
-        List<Asset> assets = StreamSupport.stream(assetRepository.findAllById(contentIds).spliterator(), false)
-            .filter(asset -> !asset.isDeleted())
-            .collect(Collectors.toList());
+// ✅ Assets 조회
+List<Asset> assetsList = StreamSupport.stream(assetRepository.findAllById(contentIds).spliterator(), false)
+    .filter(asset -> !asset.isDeleted())
+    .collect(Collectors.toList());
 
-        Map<String, Asset> assetMap = assets.stream()
-            .collect(Collectors.toMap(Asset::getId, a -> a));
+Map<String, Asset> assetMap = assetsList.stream()
+    .collect(Collectors.toMap(Asset::getId, a -> a));
 
-        // ✅ Pieces 조회 (Asset에서 조회되지 않은 ID로)
-        Set<String> assetIds = assetMap.keySet();
-        List<String> remainingIds = contentIds.stream()
-            .filter(id -> !assetIds.contains(id))
-            .collect(Collectors.toList());
+// ✅ Pieces 조회 (Asset에서 조회되지 않은 ID로)
+Set<String> assetIds = assetMap.keySet();
+List<String> remainingIds = contentIds.stream()
+    .filter(id -> !assetIds.contains(id))
+    .collect(Collectors.toList());
 
-        List<Piece> pieces = StreamSupport.stream(pieceRepository.findAllById(remainingIds).spliterator(), false)
-            .filter(piece -> !piece.isDeleted())
-            .collect(Collectors.toList());
+List<Piece> pieces = StreamSupport.stream(pieceRepository.findAllById(remainingIds).spliterator(), false)
+    .filter(piece -> !piece.isDeleted())
+    .collect(Collectors.toList());
 
-        Map<String, Piece> pieceMap = pieces.stream()
-            .collect(Collectors.toMap(Piece::getId, p -> p));
+Map<String, Piece> pieceMap = pieces.stream()
+    .collect(Collectors.toMap(Piece::getId, p -> p));
 
-        // ✅ ElementContentResponse 생성
-        Map<String, ElementContentResponse> contentResponses = new HashMap<>();
+// ✅ ElementContentResponse 생성
+Map<String, ElementContentResponse> contentResponses = new HashMap<>();
 
-        assetMap.forEach((id, asset) ->
-            contentResponses.put(id, ElementContentResponse.from(asset)));
+assetMap.forEach((id, asset) ->
+    contentResponses.put(id, ElementContentResponse.from(asset)));
 
-        pieceMap.forEach((id, piece) ->
-            contentResponses.put(id, ElementContentResponse.from(piece)));
+pieceMap.forEach((id, piece) ->
+    contentResponses.put(id, ElementContentResponse.from(piece)));
 
-        // ✅ 수정된 DTO 생성
-        return DiaryDetailResponse.from(diary, background, emotion, sortedElements, contentResponses);
-    }
+// ✅ 수정된 DTO 생성
+return DiaryDetailResponse.from(diary, background, emotion, sortedElements, contentResponses);
 
-    
-
-	// 일기 목록 조회 (현재 그대로 유지 가능)
+// 일기 목록 조회 (현재 그대로 유지 가능)
     @Transactional(readOnly = true)
     public PagedDiaryResponse<?> getDiaries(DiarySearchRequest request, int page, int size, boolean includeElements) {
-        Criteria criteria = diaryListSearch.buildSearch(request);
-        Query query = new Query(criteria)
-            .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        // participants 쿼리 처리
+        String participants = request.getParticipants();
+        Page<Diary> diariesPage;
 
-        if (!includeElements) {
-            query.fields().exclude("elementIds");  // 요소 ID 리스트 제외
+        if (participants != null && !participants.isBlank()) {
+            // participants로 필터링
+            diariesPage = diaryRepository.findByParticipantsContaining(participants, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        } else {
+            // 기존 검색 로직 유지
+            Criteria criteria = diaryListSearch.buildSearch(request);
+            Query query = new Query(criteria)
+                    .with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+            if (!includeElements) {
+                query.fields().exclude("elementIds");  // 요소 ID 리스트 제외
+            }
+
+            List<Diary> diaries = mongoTemplate.find(query, Diary.class);
+            long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Diary.class);
+            diariesPage = new PageImpl<>(diaries, PageRequest.of(page, size), total);
         }
 
-        List<Diary> diaries = mongoTemplate.find(query, Diary.class);
-        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Diary.class);
+        List<Diary> diaries = diariesPage.getContent();
+        long total = diariesPage.getTotalElements();
 
         if (includeElements) {
-            // 배경과 이모션 Asset ID 미리 수집
+            // 상세 조회 (배경, 이모션, 요소까지 포함)
             Set<String> assetIds = diaries.stream()
-                .flatMap(d -> Stream.of(d.getBackgroundContentId(), d.getEmotionContentId()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+                    .flatMap(d -> Stream.of(d.getBackgroundContentId(), d.getEmotionContentId()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
 
             Map<String, Asset> assets = mongoTemplate.find(
-                Query.query(Criteria.where("_id").in(assetIds).and("deleted").is(false)),
-                Asset.class
+                    Query.query(Criteria.where("_id").in(assetIds).and("deleted").is(false)),
+                    Asset.class
             ).stream().collect(Collectors.toMap(Asset::getId, a -> a));
 
             List<DiaryDetailResponse> detailedResponses = diaries.stream()
-                .map(diary -> {
-                    // 요소 목록 조회
-                    List<DiaryElement> elements = diary.getElementIds() != null && !diary.getElementIds().isEmpty()
-                        ? mongoTemplate.find(
-                            Query.query(Criteria.where("_id").in(diary.getElementIds()).and("deleted").is(false)),
-                            DiaryElement.class
-                        )
-                        : Collections.emptyList();
+.map(diary -> {
+    // 요소 목록 조회
+    List<DiaryElement> elements = diary.getElementIds() != null && !diary.getElementIds().isEmpty()
+        ? mongoTemplate.find(
+            Query.query(Criteria.where("_id").in(diary.getElementIds()).and("deleted").is(false)),
+            DiaryElement.class
+        )
+        : Collections.emptyList();
 
-                    // 🔥🔥🔥 요소의 elementType에 따라 Asset과 Piece의 ID를 정확히 분리 🔥🔥🔥
-                    List<String> assetContentIds = elements.stream()
-                        .filter(e -> List.of("STICKER", "BACKGROUND", "EMOTION").contains(e.getElementType()))
-                        .map(DiaryElement::getContentId)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .collect(Collectors.toList());
+    // 🔥🔥🔥 요소의 elementType에 따라 Asset과 Piece의 ID를 정확히 분리 🔥🔥🔥
+    List<String> assetContentIds = elements.stream()
+        .filter(e -> List.of("STICKER", "BACKGROUND", "EMOTION").contains(e.getElementType()))
+        .map(DiaryElement::getContentId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .collect(Collectors.toList());
 
-                    List<String> pieceContentIds = elements.stream()
-                        .filter(e -> List.of("TEXT", "IMAGE", "AUDIO", "VIDEO").contains(e.getElementType()))
-                        .map(DiaryElement::getContentId)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .collect(Collectors.toList());
+    List<String> pieceContentIds = elements.stream()
+        .filter(e -> List.of("TEXT", "IMAGE", "AUDIO", "VIDEO").contains(e.getElementType()))
+        .map(DiaryElement::getContentId)
+        .filter(Objects::nonNull)
+        .distinct()
+        .collect(Collectors.toList());
 
-                    // Asset 조회
-                    Map<String, Asset> elementAssetMap = assetContentIds.isEmpty() 
-                        ? Collections.emptyMap()
-                        : mongoTemplate.find(
-                            Query.query(Criteria.where("_id").in(assetContentIds).and("deleted").is(false)),
-                            Asset.class
-                        ).stream().collect(Collectors.toMap(Asset::getId, a -> a));
+    // Asset 조회
+    Map<String, Asset> elementAssetMap = assetContentIds.isEmpty() 
+        ? Collections.emptyMap()
+        : mongoTemplate.find(
+            Query.query(Criteria.where("_id").in(assetContentIds).and("deleted").is(false)),
+            Asset.class
+        ).stream().collect(Collectors.toMap(Asset::getId, a -> a));
 
-                    // Piece 조회
-                    Map<String, Piece> pieceMap = pieceContentIds.isEmpty()
-                        ? Collections.emptyMap()
-                        : mongoTemplate.find(
-                            Query.query(Criteria.where("_id").in(pieceContentIds).and("deleted").is(false)),
-                            Piece.class
-                        ).stream().collect(Collectors.toMap(Piece::getId, p -> p));
+    // Piece 조회
+    Map<String, Piece> pieceMap = pieceContentIds.isEmpty()
+        ? Collections.emptyMap()
+        : mongoTemplate.find(
+            Query.query(Criteria.where("_id").in(pieceContentIds).and("deleted").is(false)),
+            Piece.class
+        ).stream().collect(Collectors.toMap(Piece::getId, p -> p));
 
-                    // ElementContentResponse 생성
-                    Map<String, ElementContentResponse> contentResponses = new HashMap<>();
+    // ElementContentResponse 생성
+    Map<String, ElementContentResponse> contentResponses = new HashMap<>();
 
-                    elementAssetMap.forEach((id, asset) ->
-                        contentResponses.put(id, ElementContentResponse.from(asset)));
+    elementAssetMap.forEach((id, asset) ->
+        contentResponses.put(id, ElementContentResponse.from(asset)));
 
-                    pieceMap.forEach((id, piece) ->
-                        contentResponses.put(id, ElementContentResponse.from(piece)));
+    pieceMap.forEach((id, piece) ->
+        contentResponses.put(id, ElementContentResponse.from(piece)));
 
-                    // DiaryDetailResponse 반환
-                    return DiaryDetailResponse.from(diary,
-                                                    assets.get(diary.getBackgroundContentId()),
-                                                    assets.get(diary.getEmotionContentId()),
-                                                    elements,
-                                                    contentResponses);
-                })
-                .collect(Collectors.toList());
+    // DiaryDetailResponse 반환
+    return DiaryDetailResponse.from(
+        diary,
+        assets.get(diary.getBackgroundContentId()),
+        assets.get(diary.getEmotionContentId()),
+        elements,
+        contentResponses
+    );
+})
+.collect(Collectors.toList());
 
             return PagedDiaryResponse.of(detailedResponses, page, size, total);
         } else {
             // 간단 조회 (배경, 이모션 ID만 포함)
             List<DiarySimpleResponse> simpleResponses = diaries.stream()
-                .map(DiarySimpleResponse::from)
-                .collect(Collectors.toList());
+                    .map(DiarySimpleResponse::from)
+                    .collect(Collectors.toList());
 
             return PagedDiaryResponse.of(simpleResponses, page, size, total);
         }
     }
 
-    
     // 일기 메타 수정
     @Transactional
     public DiaryMetaUpdateResponse updateDiaryMeta(String diaryId, DiaryMetaUpdateRequest request) {
         Diary diary = diaryRepository.findById(diaryId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 일기입니다."));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 일기입니다."));
 
         Map<String, DiaryMetaUpdateResponse.UpdateField> updatedFields = new HashMap<>();
 
@@ -348,16 +370,16 @@ public class DiaryService {
         diaryRepository.save(diary);
 
         return DiaryMetaUpdateResponse.builder()
-            .diaryId(diaryId)
-            .updatedFields(updatedFields)
-            .build();
+                .diaryId(diaryId)
+                .updatedFields(updatedFields)
+                .build();
     }
-    
+
     // 일기 요소 순서 변경
     @Transactional
     public DiaryElementsOrderResponse updateDiaryElements(String diaryId, DiaryElementsOrderUpdateRequest request) {
         Diary diary = diaryRepository.findById(diaryId)
-            .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
         List<String> requestedElementIds = request.getElementIds();
 
@@ -387,18 +409,17 @@ public class DiaryService {
         diaryRepository.save(diary);
 
         return DiaryElementsOrderResponse.of(
-            diary.getId(),
-            diary.getElementIds(),
-            diary.getUpdatedAt()
+                diary.getId(),
+                diary.getElementIds(),
+                diary.getUpdatedAt()
         );
     }
 
-    
     // 일기 논리적 삭제
     @Transactional
     public DiaryDeleteResponse deleteDiary(String diaryId) {
         Diary diary = diaryRepository.findById(diaryId)
-            .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
 
         if (diary.isDeleted()) {
             throw new NoSuchElementException("존재하지 않는 일기입니다.");
@@ -410,5 +431,46 @@ public class DiaryService {
         diaryRepository.save(diary);
 
         return DiaryDeleteResponse.of(diary.getId(), diary.getUserId());
+    }
+
+    // participants에 사용자 추가 (기존 메서드)
+    @Transactional
+    public void addParticipant(String diaryId, String userId) {
+        Diary diary = diaryRepository.findById(diaryId)
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 일기입니다."));
+
+        List<String> participants = new ArrayList<>(diary.getParticipants());
+        if (!participants.contains(userId)) {
+            participants.add(userId);
+            diary.setParticipants(participants);
+            diary.setUpdatedAt(Instant.now());
+            diaryRepository.save(diary);
+        }
+    }
+
+    // diaryDate와 senderId로 일기를 찾아 participants에 사용자 추가 (추가 메서드)
+    @Transactional
+    public void addParticipantByDiaryDate(String diaryDate, String senderId, String userId) {
+        LocalDate date = LocalDate.parse(diaryDate);
+
+        // diaryDate로 일기 조회
+        List<Diary> diaries = diaryRepository.findByCreatedAtBetween(
+                date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
+                date.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
+        );
+
+        Diary diary = diaries.stream()
+                .filter(d -> d.getUserId().equals(senderId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("해당 날짜의 일기가 존재하지 않습니다."));
+
+        // participants에 사용자 추가
+        List<String> participants = new ArrayList<>(diary.getParticipants());
+        if (!participants.contains(userId)) {
+            participants.add(userId);
+            diary.setParticipants(participants);
+            diary.setUpdatedAt(Instant.now());
+            diaryRepository.save(diary);
+        }
     }
 }
