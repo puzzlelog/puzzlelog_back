@@ -50,4 +50,8 @@ public class Diary {
 
     // 타임캡슐에 사용
     private Instant openAt;
+    
+    
+    //협업일기 참여자ㅏ
+    private List<String> participants;
 }
