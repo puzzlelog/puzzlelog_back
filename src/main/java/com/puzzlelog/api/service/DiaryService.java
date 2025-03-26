@@ -450,30 +450,4 @@ return DiaryDetailResponse.from(diary, background, emotion, sortedElements, cont
             diaryRepository.save(diary);
         }
     }
-
-    // diaryDate와 senderId로 일기를 찾아 participants에 사용자 추가 (추가 메서드)
-    @Transactional
-    public void addParticipantByDiaryDate(String diaryDate, String senderId, String userId) {
-        LocalDate date = LocalDate.parse(diaryDate);
-
-        // diaryDate로 일기 조회
-        List<Diary> diaries = diaryRepository.findByCreatedAtBetween(
-                date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
-                date.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
-        );
-
-        Diary diary = diaries.stream()
-                .filter(d -> d.getUserId().equals(senderId))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("해당 날짜의 일기가 존재하지 않습니다."));
-
-        // participants에 사용자 추가
-        List<String> participants = new ArrayList<>(diary.getParticipants());
-        if (!participants.contains(userId)) {
-            participants.add(userId);
-            diary.setParticipants(participants);
-            diary.setUpdatedAt(Instant.now());
-            diaryRepository.save(diary);
-        }
-    }
 }

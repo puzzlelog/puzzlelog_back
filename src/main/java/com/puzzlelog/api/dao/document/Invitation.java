@@ -1,6 +1,7 @@
 package com.puzzlelog.api.dao.document;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -18,9 +19,19 @@ public class Invitation {
 	private String id;
 	
 	private String senderId;
-	private List<String> receiverIds;
+
+    @Builder.Default
+	private List<String> receiverIds = new ArrayList<>(); // 무조건 빈 리스트로 초기화
+
+	private String diaryId;
 	private String diaryDate;
 	private String status; // PENDING, ACCEPTED, REJECTED
-	private List<String> acceptedUsers;
+
+    @Builder.Default
+	private List<String> acceptedUsers = new ArrayList<>();
+
+    @Builder.Default
+	private List<String> rejectedUsers = new ArrayList<>();
+
 	private Instant createdAt;
 }
