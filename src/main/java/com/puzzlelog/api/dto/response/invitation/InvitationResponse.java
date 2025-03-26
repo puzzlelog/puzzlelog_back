@@ -1,5 +1,6 @@
 package com.puzzlelog.api.dto.response.invitation;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.puzzlelog.api.dao.document.Invitation;
@@ -14,18 +15,24 @@ public class InvitationResponse {
 	private String invitationId;
 	private String senderId;
 	private List<String> receiverIds;
+	private String diaryId;
 	private String diaryDate;
 	private String status;
 	private List<String> acceptedUsers;
+	private List<String> rejectedUsers;
+	private Instant createdAt;
 	
 	public static InvitationResponse from(Invitation invitation) {
 		return InvitationResponse.builder()
 				.invitationId(invitation.getId())
 				.senderId(invitation.getSenderId())
 				.receiverIds(invitation.getReceiverIds())
+				.diaryId(invitation.getDiaryId())
 				.diaryDate(invitation.getDiaryDate())
 				.status(invitation.getStatus())
 				.acceptedUsers(invitation.getAcceptedUsers())
+				.rejectedUsers(invitation.getRejectedUsers())
+	            .createdAt(invitation.getCreatedAt())
 				.build();
 	}
 }

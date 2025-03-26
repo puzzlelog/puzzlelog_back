@@ -9,5 +9,6 @@ public class InvitationRequest {
 
 	private String senderId;
 	private List<String> receiverIds;
+	private String diaryId;
 	private String diaryDate;
 }

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.puzzlelog.api.dto.request.diary.element.DiaryElementsOrderUpdateRequest;
-import com.puzzlelog.api.dto.request.diary.meta.AddParticipantByDiaryDateRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiaryMetaUpdateRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiaryRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiarySearchRequest;
@@ -94,17 +93,4 @@ public class DiaryController {
         DiaryDeleteResponse response = diaryService.deleteDiary(diaryId);
         return ResponseEntity.ok(ApiResponse.success(response, "일기 삭제 성공"));
     }
-    
- // 임시 엔드포인트: diaryDate로 participants 업데이트 (테스트용)
-    @PatchMapping("/participants/add-by-date")
-    public ResponseEntity<ApiResponse<String>> addParticipantByDiaryDate(
-            @RequestBody AddParticipantByDiaryDateRequest request) {
-        diaryService.addParticipantByDiaryDate(
-                request.getDiaryDate(),
-                request.getSenderId(),
-                request.getUserId()
-        );
-        return ResponseEntity.ok(ApiResponse.success(null, "participants 업데이트 성공"));
-    }
-
 }
