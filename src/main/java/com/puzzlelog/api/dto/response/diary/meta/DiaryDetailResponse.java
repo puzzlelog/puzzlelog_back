@@ -35,6 +35,9 @@ public class DiaryDetailResponse {
     private Instant updatedAt;
 
     private List<DiaryElementResponse> elements;
+    
+    private List<String> participants; //협업일기참가자
+
 
     public static DiaryDetailResponse from(
             Diary diary, 
@@ -45,6 +48,7 @@ public class DiaryDetailResponse {
         return DiaryDetailResponse.builder()
             .diaryId(diary.getId())
             .userId(diary.getUserId())
+            .participants(diary.getParticipants())
             .title(diary.getTitle())
             .background(AssetResponse.from(background))
             .themeColor(diary.getThemeColor())
