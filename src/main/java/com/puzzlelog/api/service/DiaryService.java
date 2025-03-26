@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,11 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.puzzlelog.api.dao.document.Asset;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dao.document.DiaryElement;
+import com.puzzlelog.api.dao.document.Piece;
 import com.puzzlelog.api.dto.request.diary.element.DiaryElementsOrderUpdateRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiaryMetaUpdateRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiaryRequest;
 import com.puzzlelog.api.dto.request.diary.meta.DiarySearchRequest;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementsOrderResponse;
+import com.puzzlelog.api.dto.response.diary.element.ElementContentResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryDeleteResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryDetailResponse;
 import com.puzzlelog.api.dto.response.diary.meta.DiaryMetaUpdateResponse;
@@ -43,6 +46,7 @@ import com.puzzlelog.api.repository.listsearch.DiaryListSearch;
 import com.puzzlelog.api.repository.mongo.AssetRepository;
 import com.puzzlelog.api.repository.mongo.DiaryElementRepository;
 import com.puzzlelog.api.repository.mongo.DiaryRepository;
+import com.puzzlelog.api.repository.mongo.PieceRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,6 +59,7 @@ public class DiaryService {
     private final MongoTemplate mongoTemplate;
     private final DiaryListSearch diaryListSearch;
     private final AssetRepository assetRepository;
+    private final PieceRepository pieceRepository;
 
     // 일기 생성
     @Transactional
@@ -165,11 +170,50 @@ public class DiaryService {
         Asset emotion = diary.getEmotionContentId() != null ?
                 assetRepository.findByIdAndDeletedFalse(diary.getEmotionContentId()).orElse(null) : null;
 
-        // 수정된 DTO 생성
+        // DiaryElement에서 contentId 추출
+        List<String> contentIds = sortedElements.stream()
+            .map(DiaryElement::getContentId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+
+        // ✅ Assets 조회
+        List<Asset> assets = StreamSupport.stream(assetRepository.findAllById(contentIds).spliterator(), false)
+            .filter(asset -> !asset.isDeleted())
+            .collect(Collectors.toList());
+
+        Map<String, Asset> assetMap = assets.stream()
+            .collect(Collectors.toMap(Asset::getId, a -> a));
+
+        // ✅ Pieces 조회 (Asset에서 조회되지 않은 ID로)
+        Set<String> assetIds = assetMap.keySet();
+        List<String> remainingIds = contentIds.stream()
+            .filter(id -> !assetIds.contains(id))
+            .collect(Collectors.toList());
+
+        List<Piece> pieces = StreamSupport.stream(pieceRepository.findAllById(remainingIds).spliterator(), false)
+            .filter(piece -> !piece.isDeleted())
+            .collect(Collectors.toList());
+
+        Map<String, Piece> pieceMap = pieces.stream()
+            .collect(Collectors.toMap(Piece::getId, p -> p));
+
+        // ✅ ElementContentResponse 생성
+        Map<String, ElementContentResponse> contentResponses = new HashMap<>();
+
+        assetMap.forEach((id, asset) ->
+            contentResponses.put(id, ElementContentResponse.from(asset)));
+
+        pieceMap.forEach((id, piece) ->
+            contentResponses.put(id, ElementContentResponse.from(piece)));
+
+        // ✅ 수정된 DTO 생성
         return DiaryDetailResponse.from(diary, background, emotion, sortedElements);
     }
 
-    // 일기 목록 조회 (participants 쿼리 추가)
+    
+
+	// 일기 목록 조회 (현재 그대로 유지 가능)
     @Transactional(readOnly = true)
     public PagedDiaryResponse<?> getDiaries(DiarySearchRequest request, int page, int size, boolean includeElements) {
         // participants 쿼리 처리
@@ -222,6 +266,55 @@ public class DiaryService {
                         return DiaryDetailResponse.from(diary, background, emotion, elements);
                     })
                     .collect(Collectors.toList());
+
+                    // 🔥🔥🔥 요소의 elementType에 따라 Asset과 Piece의 ID를 정확히 분리 🔥🔥🔥
+                    List<String> assetContentIds = elements.stream()
+                        .filter(e -> List.of("STICKER", "BACKGROUND", "EMOTION").contains(e.getElementType()))
+                        .map(DiaryElement::getContentId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                    List<String> pieceContentIds = elements.stream()
+                        .filter(e -> List.of("TEXT", "IMAGE", "AUDIO", "VIDEO").contains(e.getElementType()))
+                        .map(DiaryElement::getContentId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                    // Asset 조회
+                    Map<String, Asset> elementAssetMap = assetContentIds.isEmpty() 
+                        ? Collections.emptyMap()
+                        : mongoTemplate.find(
+                            Query.query(Criteria.where("_id").in(assetContentIds).and("deleted").is(false)),
+                            Asset.class
+                        ).stream().collect(Collectors.toMap(Asset::getId, a -> a));
+
+                    // Piece 조회
+                    Map<String, Piece> pieceMap = pieceContentIds.isEmpty()
+                        ? Collections.emptyMap()
+                        : mongoTemplate.find(
+                            Query.query(Criteria.where("_id").in(pieceContentIds).and("deleted").is(false)),
+                            Piece.class
+                        ).stream().collect(Collectors.toMap(Piece::getId, p -> p));
+
+                    // ElementContentResponse 생성
+                    Map<String, ElementContentResponse> contentResponses = new HashMap<>();
+
+                    elementAssetMap.forEach((id, asset) ->
+                        contentResponses.put(id, ElementContentResponse.from(asset)));
+
+                    pieceMap.forEach((id, piece) ->
+                        contentResponses.put(id, ElementContentResponse.from(piece)));
+
+                    // DiaryDetailResponse 반환
+                    return DiaryDetailResponse.from(diary,
+                                                    assets.get(diary.getBackgroundContentId()),
+                                                    assets.get(diary.getEmotionContentId()),
+                                                    elements,
+                                                    contentResponses);
+                })
+                .collect(Collectors.toList());
 
             return PagedDiaryResponse.of(detailedResponses, page, size, total);
         } else {

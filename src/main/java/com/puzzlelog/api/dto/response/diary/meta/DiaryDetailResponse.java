@@ -2,12 +2,15 @@ package com.puzzlelog.api.dto.response.diary.meta;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.puzzlelog.api.dao.document.Asset;
 import com.puzzlelog.api.dao.document.Diary;
 import com.puzzlelog.api.dao.document.DiaryElement;
+import com.puzzlelog.api.dto.response.asset.AssetResponse;
 import com.puzzlelog.api.dto.response.diary.element.DiaryElementResponse;
+import com.puzzlelog.api.dto.response.diary.element.ElementContentResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,11 +43,12 @@ public class DiaryDetailResponse {
 
 
     public static DiaryDetailResponse from(
-            Diary diary, 
-            Asset background, 
-            Asset emotion, 
-            List<DiaryElement> elements) {
-        
+            Diary diary,
+            Asset background,
+            Asset emotion,
+            List<DiaryElement> elements,
+            Map<String, ElementContentResponse> contentMap) {
+
         return DiaryDetailResponse.builder()
             .diaryId(diary.getId())
             .userId(diary.getUserId())
@@ -58,8 +62,12 @@ public class DiaryDetailResponse {
             .createdAt(diary.getCreatedAt())
             .updatedAt(diary.getUpdatedAt())
             .elements(elements.stream()
-                .map(DiaryElementResponse::from)
+                .map(element -> DiaryElementResponse.from(
+                    element, 
+                    contentMap.get(element.getContentId())  // ✅ 여기서 content 전달!
+                ))
                 .collect(Collectors.toList()))
             .build();
     }
+
 }

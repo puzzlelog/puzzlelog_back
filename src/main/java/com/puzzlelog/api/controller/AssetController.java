@@ -37,6 +37,7 @@ public class AssetController {
             @RequestHeader("userId") String userId,
             @RequestPart("name") String name,
             @RequestPart("type") String type,
+            @RequestPart("tag") String tag,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         if (!authService.isAdmin(userId)) {
@@ -45,7 +46,7 @@ public class AssetController {
         }
 
         try {
-            Asset savedAsset = assetService.addAsset(name, type, file);
+            Asset savedAsset = assetService.addAsset(name, type, tag, file);
             return ResponseEntity.ok(ApiResponse.success(savedAsset, "자산이 추가되었습니다."));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage()));
