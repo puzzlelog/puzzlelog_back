@@ -29,12 +29,12 @@ public class UserResponse {
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
                 .birthDate(user.getBirthDate())
-                .gender(user.getGender() != null ? user.getGender().name() : null)
+                .gender(user.getGender() != null ? user.getGender() : null)
                 .isAlarm(user.getIsAlarm())
                 .profileImg(user.getProfileImg())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                .status(user.getStatus() != null ? user.getStatus().name() : null)
+                .status(user.getStatus() != null ? user.getStatus() : null)
                 .build();
     }
 }

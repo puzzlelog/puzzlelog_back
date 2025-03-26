@@ -10,19 +10,44 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * 사용자 정보 수정 요청 DTO
+ * 프론트엔드에서 전달받은 사용자 수정 필드를 담으며,
+ * 어떤 필드가 실제로 수정되었는지를 추적하기 위해 내부적으로 필드 이름을 저장합니다.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 public class UserUpdateRequest {
-    private String userPwd;    
-    private String nickname;   
-    private String birthDate;  
-    private String gender;     
-    private Boolean isAlarm;   
-    private String profileImg; 
-    private String status;     
-    private String role;       
 
+    /** 사용자 비밀번호 (선택) */
+    private String userPwd;
+
+    /** 사용자 닉네임 (선택) */
+    private String nickname;
+
+    /** 생년월일 (형식: YYYY-MM-DD, 선택) */
+    private String birthDate;
+
+    /** 성별 ("MALE", "FEMALE", 선택) */
+    private String gender;
+
+    /** 알림 수신 여부 (선택) */
+    private Boolean isAlarm;
+
+    /** 프로필 이미지 URL (선택) */
+    private String profileImg;
+
+    /** 사용자 상태 (예: "ACTIVE", "DELETED", 선택) */
+    private String status;
+
+    /** 사용자 권한 (예: "USER", "ADMIN", 선택) */
+    private String role;
+
+    /** 관리자 수정 시 사유 (선택, 관리자용) */
+    private String reason;
+
+    /** 어떤 필드가 수정되었는지 추적하는 내부 Set */
     @JsonIgnore
     private final Set<String> fieldsSet = new HashSet<>();
 
@@ -83,6 +108,9 @@ public class UserUpdateRequest {
     public boolean hasStatus() { return fieldsSet.contains("status"); }
     public boolean hasRole() { return fieldsSet.contains("role"); }
 
+    /**
+     * 전달된 필드가 아무것도 없는 경우 true 반환
+     */
     public boolean isEmpty() {
         return fieldsSet.isEmpty();
     }
