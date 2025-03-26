@@ -1,6 +1,7 @@
 package com.puzzlelog.api.repository.mongo;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,4 +25,6 @@ public interface PieceRepository extends MongoRepository<Piece, String> {
     
     // 컨텐츠 타입 조회
     boolean existsByIdAndTypeAndDeletedFalse(String id, String type);
+    
+    Optional<Piece> findByIdAndDeletedFalse(String id);
 }

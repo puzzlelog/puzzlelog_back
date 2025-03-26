@@ -30,7 +30,7 @@ public class Piece {
     @Builder.Default
     private String type = "TEXT";  // TEXT, IMAGE, VIDEO, AUDIO
 
-    private String content;  // 조각 내용 (텍스트 형식일 때 사용)
+    private String text;  // 조각 내용 (텍스트 형식일 때 사용)
 
     private List<String> tags;  // 태그 정보 (배열)
 
