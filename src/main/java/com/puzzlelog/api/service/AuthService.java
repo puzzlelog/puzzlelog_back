@@ -1,6 +1,6 @@
 package com.puzzlelog.api.service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
 import com.puzzlelog.api.dto.request.auth.SignupRequest;
-import com.puzzlelog.api.dto.response.auth.LoginResponse;
 import com.puzzlelog.api.dto.response.auth.SignupResponse;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
 import com.puzzlelog.api.repository.mysql.UserRepository;
@@ -88,7 +87,31 @@ public class AuthService {
      */
     public User validateUser(LoginRequest request) {
         return userRepository.findByUserId(request.getUserId())
-                .filter(user -> passwordEncoder.matches(request.getUserPwd(), user.getUserPwd()))
-                .orElse(null);
+            .map(user -> {
+                if ("DELETED".equals(user.getStatus())) {
+                    throw new RuntimeException("탈퇴한 계정입니다.");
+                }
+
+                if ("BANNED".equals(user.getStatus())) {
+                    if (user.getBanUntil() != null && user.getBanUntil().isBefore(LocalDateTime.now())) {
+                        // 차단 기간이 끝났으면 상태 복구
+                        user.setStatus("ACTIVE");
+                        user.setBanReason(null);
+                        user.setBanUntil(null);
+                        userRepository.save(user);
+                    } else {
+                        String reason = user.getBanReason() != null ? user.getBanReason() : "관리자에 의해 차단된 계정입니다.";
+                        throw new RuntimeException("계정이 정지되었습니다. 사유: " + reason);
+                    }
+                }
+
+                if (!passwordEncoder.matches(request.getUserPwd(), user.getUserPwd())) {
+                    throw new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다.");
+                }
+
+                return user;
+            })
+            .orElse(null);
     }
+
 }

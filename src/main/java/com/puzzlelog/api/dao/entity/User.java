@@ -46,7 +46,7 @@ public class User implements Serializable {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
-    /** 성별 (MALE, FEMALE로 저장) */
+    /** 성별 (MALE, FEMALE, 또는 null = 미입력 상태) */
     @Column(name = "gender", length = 10)
     private String gender;
 
@@ -88,6 +88,14 @@ public class User implements Serializable {
     @Builder.Default
     @Column(name = "role", length = 20)
     private String role = "USER";
+    
+    /** 계정 정지 사유 (BANNED 상태일 때만 사용) */
+    @Column(name = "ban_reason", length = 255)
+    private String banReason;
+
+    /** 계정 정지 만료 시각 (null이면 영구 정지) */
+    @Column(name = "ban_until")
+    private LocalDateTime banUntil;
 
     /** 데이터 생성 전 처리 메서드 (자동으로 값 초기화) */
     @PrePersist

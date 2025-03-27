@@ -9,6 +9,11 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,8 +24,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.puzzlelog.api.config.CustomAccessDeniedException;
 import com.puzzlelog.api.dao.document.UserHistory;
 import com.puzzlelog.api.dao.entity.User;
+import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
+import com.puzzlelog.api.dto.response.user.UserResponse;
 import com.puzzlelog.api.dto.response.user.UserUpdateResponse;
 import com.puzzlelog.api.repository.listsearch.UserListSearch;
 import com.puzzlelog.api.repository.mongo.UserHistoryRepository;
@@ -56,6 +63,10 @@ public class UserService {
     public UserUpdateResponse updateUser(String userId, UserUpdateRequest request, MultipartFile file) {
         User user = userRepository.findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        
+        if ("DELETED".equals(user.getStatus())) {
+            throw new CustomAccessDeniedException("탈퇴한 사용자는 정보를 수정할 수 없습니다.");
+        }
 
         Map<String, UserUpdateResponse.UpdateField> updatedFields = new HashMap<>();
         Map<String, Object> historyFields = new HashMap<>();
@@ -178,12 +189,35 @@ public class UserService {
                 }
 
                 if (!Objects.equals(newStatusStr, prevStatusStr)) {
+                    // status 필드 변경 이력 기록
                     Map<String, Object> statusHistory = new HashMap<>();
                     statusHistory.put("before", prevStatusStr);
                     statusHistory.put("after", newStatusStr);
                     historyFields.put("status", statusHistory);
                     updatedFields.put("status", new UserUpdateResponse.UpdateField(prevStatusStr, newStatusStr));
                     user.setStatus(newStatusStr);
+                }
+
+                // 상태가 BANNED면 banReason, banUntil은 무조건 설정
+                if ("BANNED".equals(newStatusStr)) {
+                    if (request.getBanReason() == null || request.getBanReason().isBlank()) {
+                        throw new IllegalArgumentException("차단 사유(banReason)는 필수입니다.");
+                    }
+
+                    String prevReason = user.getBanReason();
+                    LocalDateTime prevUntil = user.getBanUntil();
+
+                    user.setBanReason(request.getBanReason());
+                    user.setBanUntil(request.getBanUntil()); // null이면 영구 정지로 간주
+
+                    updatedFields.put("banReason", new UserUpdateResponse.UpdateField(prevReason, request.getBanReason()));
+                    updatedFields.put("banUntil", new UserUpdateResponse.UpdateField(
+                        prevUntil != null ? prevUntil.toString() : null,
+                        request.getBanUntil() != null ? request.getBanUntil().toString() : null
+                    ));
+                } else {
+                    user.setBanReason(null);
+                    user.setBanUntil(null);
                 }
             }
 
@@ -258,61 +292,96 @@ public class UserService {
             .build();
     }
     
-//    // 전체 사용자 조회 (페이징)
-//    @Transactional(readOnly = true)
-//    public Page<UserResponse> getAllUsers(int page, int size) {
-//        return userRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()))
-//                .map(UserResponse::from);
-//    }
-//    
-//    
-//    @Transactional(readOnly = true)
-//    public Page<UserResponse> findUsers(UserSearchRequest request, int page, int size) {
-//        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-//
-//        Specification<User> searchSpec = userListSearch.buildSearch(request);
-//        Specification<User> jwtSpec = userListSearch.buildSearch(request);
-//
-//        Specification<User> combinedSpec = Specification.where(searchSpec).and(jwtSpec);
-//
-//        return userRepository.findAll(combinedSpec, pageable).map(UserResponse::from);
-//    }
-    
+    /**
+     * 사용자 서비스 클래스
+     * 사용자 정보 조회 및 검색 기능을 제공합니다.
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getMyInfo(String userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        
+        if ("DELETED".equals(user.getStatus())) {
+            throw new CustomAccessDeniedException("탈퇴한 사용자는 정보를 조회할 수 없습니다.");
+        }
+        
+        return UserResponse.from(user);
+    }
 
-//    // 사용자 비활성화 (상태를 DELETED로 변경)
-//    @Transactional
-//    public void deactivateUser(String userId) {
-//        User user = userRepository.findByUserId(userId)
-//            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-//
-//        Status prevStatus = user.getStatus();
-//
-//        user.setStatus(Status.DELETED);
-//        userRepository.save(user);
-//        
-//        // ✅ MongoDB 삭제 기록 추가
-//        userHistoryRepository.save(UserHistory.builder()
-//            .userId(userId)
-//            .action("DELETE")
-//            .reason("본인 삭제")
-//            .changedBy(userId)
-//            .timestamp(LocalDateTime.now())
-//            .changedFields(Map.of("status", Map.of("before", prevStatus != null ? prevStatus.name() : null, "after", Status.DELETED.name())))
-//            .build());
-//    }
-// 
-//    // 중복 체크
-//    @Transactional(readOnly = true)
-//    public boolean checkDuplicate(String type, String value) {
-//        switch (type) {
-//            case "userId":
-//                return userRepository.existsByUserId(value);
-//            case "email":
-//                return userRepository.existsByEmail(value);
-//            case "nickname":
-//                return userRepository.existsByNickname(value);
-//            default:
-//                throw new IllegalArgumentException("잘못된 중복 체크 타입입니다: " + type);
-//        }
-//    }
+    /**
+     * 사용자 목록 검색 (조건 포함 가능)
+     * 관리자 전용 기능입니다. 검색 조건이 없으면 전체 사용자 목록을 반환합니다.
+     *
+     * @param request 검색 조건 DTO (UserSearchRequest)
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지당 항목 수
+     * @return 필터링된 사용자 목록 페이지
+     */
+    @Transactional(readOnly = true)
+    public Page<UserResponse> searchUsers(UserSearchRequest request, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        // 조건 없이 전체 검색
+        if (request == null || request.hasNoCondition()) {
+            return userRepository.findAll(pageable)
+                    .map(UserResponse::from);
+        }
+
+        // 조건 검색
+        Specification<User> spec = userListSearch.buildSearch(request);
+        return userRepository.findAll(spec, pageable)
+                .map(UserResponse::from);
+    }
+
+    /**
+     * 아이디, 이메일, 닉네임 중복 여부 확인
+     *
+     * @param type 검사할 필드 타입 (userId, email, nickname)
+     * @param value 검사할 값
+     * @return true: 중복 있음, false: 사용 가능
+     * @throws IllegalArgumentException 지원하지 않는 타입일 경우
+     */
+    @Transactional(readOnly = true)
+    public boolean checkDuplicate(String type, String value) {
+        switch (type) {
+            case "userId":
+                return userRepository.existsByUserId(value);
+            case "email":
+                return userRepository.existsByEmail(value);
+            case "nickname":
+                return userRepository.existsByNickname(value);
+            default:
+                throw new IllegalArgumentException("잘못된 중복 체크 타입입니다: " + type);
+        }
+    }
+
+    /**
+     * 현재 로그인한 사용자 탈퇴 처리 (논리 삭제)
+     *
+     * 사용자 본인의 계정을 상태값 "DELETED"로 변경하고,
+     * MongoDB에 탈퇴 이력을 저장합니다.
+     *
+     * @param userId JWT 인증된 사용자 ID
+     */
+    @Transactional
+    public void deactivateUser(String userId) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String prevStatus = user.getStatus();
+        user.setStatus("DELETED");
+        userRepository.save(user);
+
+        // 탈퇴 이력 저장 (MongoDB)
+        userHistoryRepository.save(UserHistory.builder()
+            .userId(userId)
+            .action("DELETE")
+            .reason("본인 삭제")
+            .changedBy(userId)
+            .timestamp(LocalDateTime.now())
+            .changedFields(Map.of(
+                "status", Map.of("before", prevStatus, "after", "DELETED")
+            ))
+            .build());
+    }
 }

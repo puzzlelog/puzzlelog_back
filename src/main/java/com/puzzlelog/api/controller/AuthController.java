@@ -5,6 +5,7 @@ import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,16 +38,22 @@ public class AuthController {
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<SignupResponse>> signup(
             @RequestPart("data") @Valid SignupRequest request,
+            BindingResult bindingResult,
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
+        // 💥 유효성 검증 실패 처리
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            return ResponseEntity.badRequest().body(ApiResponse.fail("회원가입 유효성 실패: " + errorMessage));
+        }
+
+        // 💡 중복 아이디/이메일 검사
         if (authService.existsByUserId(request.getUserId())) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.fail("이미 존재하는 아이디입니다."));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("이미 존재하는 아이디입니다."));
         }
 
         if (authService.existsByEmail(request.getEmail())) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.fail("이미 존재하는 이메일입니다."));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("이미 존재하는 이메일입니다."));
         }
 
         SignupResponse response = authService.registerUser(request, file);
@@ -62,7 +69,15 @@ public class AuthController {
      * @return JWT 토큰이 포함된 응답 DTO
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest loginRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @RequestBody @Valid LoginRequest loginRequest,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            return ResponseEntity.badRequest().body(ApiResponse.fail("로그인 유효성 실패: " + errorMessage));
+        }
+        
         User user = authService.validateUser(loginRequest);
 
         if (user == null) {
