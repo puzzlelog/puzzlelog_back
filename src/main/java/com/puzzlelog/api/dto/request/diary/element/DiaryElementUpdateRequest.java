@@ -20,6 +20,7 @@ public class DiaryElementUpdateRequest {
     private String date;          // DATE 타입만 가능 (YYYY-MM-DD 형식)
 
     private List<Double> position;
+    private List<Double> size;
     private Double scale;
     private Double rotation;
     private ElementDecorationRequest decoration;
