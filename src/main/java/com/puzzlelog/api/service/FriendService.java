@@ -141,32 +141,38 @@ public class FriendService {
      */
     @Transactional
     public void acceptFriendRequest(String userId, String friendId) {
-        // 요청자가 friendId, 수신자가 userId인 요청 찾기
+        // B → A 요청 찾기
         Friend friendRequest = friendRepository
                 .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
                 .orElseThrow(() -> new RuntimeException("해당 친구 요청을 찾을 수 없습니다."));
 
-        // 수락 가능한 상태인지 확인
         if (!"PENDING".equals(friendRequest.getStatus())) {
             throw new RuntimeException("이미 처리된 친구 요청입니다.");
         }
 
-        // 친구 요청 상태를 ACCEPTED로 변경
+        // 요청 방향 업데이트
         friendRequest.setStatus("ACCEPTED");
         friendRepository.save(friendRequest);
 
-        // 상호 친구 관계를 새로 생성 (반대 방향)
-        Friend reciprocalFriend = Friend.builder()
-            .user(friendRequest.getFriend())  // 수신자 → 요청자
-            .friend(friendRequest.getUser())  // 요청자 → 수신자
-            .status("ACCEPTED")
-            .build();
+        // 반대 방향(A → B)이 이미 존재하는 경우 상태 갱신, 없으면 새로 생성
+        Friend reciprocalFriend = friendRepository
+            .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
+            .map(existing -> {
+                existing.setStatus("ACCEPTED");
+                return existing;
+            })
+            .orElse(Friend.builder()
+                .user(friendRequest.getFriend())   // userId
+                .friend(friendRequest.getUser())   // friendId
+                .status("ACCEPTED")
+                .build());
+
         friendRepository.save(reciprocalFriend);
 
-        // MongoDB에 친구 수락 이력 저장
+        // 수락 이력 저장
         friendHistoryRepository.save(FriendHistory.builder()
-            .userId(userId)              // 수락자
-            .friendId(friendId)          // 요청자
+            .userId(userId)
+            .friendId(friendId)
             .status("ACCEPTED")
             .timestamp(LocalDateTime.now())
             .build());
@@ -340,32 +346,47 @@ public class FriendService {
         return FriendResponse.from(updatedFriend);
     }
     
-    // 친구 삭제
+    /**
+     * 친구를 삭제(비활성화)합니다.
+     * 친구 상태가 ACCEPTED인 경우에만 삭제가 가능하며,
+     * 양방향 관계를 모두 DEACTIVATED 상태로 변경합니다.
+     * 삭제 이력은 MongoDB에 저장됩니다.
+     *
+     * @param userId   현재 로그인한 사용자 ID (삭제 요청자)
+     * @param friendId 삭제할 친구의 사용자 ID
+     * @return 삭제된 친구 관계 정보
+     */
     @Transactional
     public FriendResponse deactivateFriend(String userId, String friendId) {
-        validateUserStatus(getUserByUserId(userId, true), true);
-        validateUserStatus(getUserByUserId(friendId, false), false);
+        // 사용자 상태 유효성 확인
+        validateUserStatus(getUserByUserId(userId, true), true);   // 본인
+        validateUserStatus(getUserByUserId(friendId, false), false); // 친구 대상
 
-        Friend friend = friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
-                .orElseThrow(() -> new RuntimeException("친구가 아닙니다."));
+        // 나 → 친구 관계 조회 (정방향)
+        Friend friend = friendRepository
+            .findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(userId, friendId)
+            .orElseThrow(() -> new RuntimeException("친구가 아닙니다."));
 
+        // 친구 상태가 ACCEPTED가 아닐 경우 삭제 불가
         if (!"ACCEPTED".equals(friend.getStatus())) {
             throw new RuntimeException("친구가 아닙니다.");
         }
 
+        // 친구 상태 → DEACTIVATED 처리
         friend.setStatus("DEACTIVATED");
         friendRepository.save(friend);
 
+        // 친구 → 나 관계도 DEACTIVATED 처리 (역방향)
         friendRepository.findFirstByUser_UserIdAndFriend_UserIdOrderByCreatedAtDesc(friendId, userId)
-                .ifPresent(reciprocal -> {
-                    reciprocal.setStatus("DEACTIVATED");
-                    friendRepository.save(reciprocal);
-                });
+            .ifPresent(reciprocal -> {
+                reciprocal.setStatus("DEACTIVATED");
+                friendRepository.save(reciprocal);
+            });
 
-        // 친구 삭제 기록 MongoDB 저장
+        // MongoDB에 삭제 이력 기록
         friendHistoryRepository.save(FriendHistory.builder()
-            .userId(userId)     // 삭제한 사람
-            .friendId(friendId) // 삭제된 상대방
+            .userId(userId)     // 삭제 요청자
+            .friendId(friendId) // 삭제 대상
             .status("DEACTIVATED")
             .timestamp(LocalDateTime.now())
             .build());

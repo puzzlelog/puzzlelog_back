@@ -14,9 +14,12 @@ import java.util.Date;
 import java.util.Set;
 import java.util.HashSet;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * JWT 생성 및 검증을 담당하는 클래스
  */
+@Slf4j
 @Component
 public class JwtProvider {
 
@@ -37,6 +40,8 @@ public class JwtProvider {
     @PostConstruct
     public void init() {
         tokenValidTime = tokenValidTime * 1000L;
+        
+        log.info("✅ JWT 토큰 유효시간 (ms): {}", tokenValidTime);
 
         if (secretKey == null || secretKey.trim().isEmpty()) {
             SecureRandom secureRandom = new SecureRandom();
@@ -44,7 +49,7 @@ public class JwtProvider {
             secureRandom.nextBytes(keyBytes);
             secretKey = Base64.getEncoder().encodeToString(keyBytes);
             // 실제 운영환경에서는 랜덤 키 사용을 피하고 명시적 키를 설정해야 합니다.
-            System.out.println("⚠️ WARNING: JWT secret 미설정. 임의의 secret 키를 생성했습니다.");
+            log.warn("⚠️ JWT secret 미설정. 임의의 secret 키를 생성했습니다.");
         }
 
         signingKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));

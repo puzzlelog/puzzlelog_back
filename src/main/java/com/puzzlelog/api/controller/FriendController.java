@@ -146,12 +146,21 @@ public class FriendController {
         return ResponseEntity.ok(ApiResponse.success(response, "친구 차단을 해제했습니다."));
     }
 
-    // 친구 비활성화 (삭제)
-    @DeleteMapping("/{userId}/friends/{friendId}")
+    /**
+     * 친구를 삭제(비활성화)합니다.
+     * 친구 상태가 ACCEPTED인 경우만 삭제할 수 있으며,
+     * 양방향 친구 관계를 모두 DEACTIVATED 상태로 변경합니다.
+     *
+     * @param friendId 삭제할 친구의 사용자 ID
+     * @return 삭제된 친구 정보
+     */
+    @DeleteMapping("/{friendId}")
     public ResponseEntity<ApiResponse<FriendResponse>> deactivateFriend(
-            @PathVariable String userId,
             @PathVariable String friendId
     ) {
+        // JWT에서 본인 ID 추출
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
         FriendResponse response = friendService.deactivateFriend(userId, friendId);
         return ResponseEntity.ok(ApiResponse.success(response, "친구를 삭제했습니다."));
     }
