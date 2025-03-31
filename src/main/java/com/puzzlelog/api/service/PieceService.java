@@ -2,6 +2,7 @@ package com.puzzlelog.api.service;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -240,29 +241,42 @@ public class PieceService {
             throw new RuntimeException("조각 수정 권한이 없습니다.");
         }
 
-        // ✅ 관리자 허용 필드 외 요청 여부 검사 (요청 필드 기준)
-        if (isAdmin && !isOwner) {
-            boolean triedToModifyForbiddenField = request.getType() != null ||
-                                                   request.getText() != null ||
-                                                   file != null ||
-                                                   request.getLocation() != null ||
-                                                   request.getPrivatePiece() != null;
+        // 허용된 필드 목록
+        Set<String> validFields = Set.of("type", "text", "tags", "location", "privatePiece");
+        Set<String> requestedFields = new HashSet<>();
 
-            if (triedToModifyForbiddenField) {
-                throw new RuntimeException("관리자는 tags만 수정할 수 있습니다.");
+        if (request.getType() != null) requestedFields.add("type");
+        if (request.getText() != null) requestedFields.add("text");
+        if (request.getTags() != null) requestedFields.add("tags");
+        if (request.getLocation() != null) requestedFields.add("location");
+        if (request.getPrivatePiece() != null) requestedFields.add("privatePiece");
+        if (file != null) requestedFields.add("file");
+
+        for (String field : requestedFields) {
+            if (!validFields.contains(field)) {
+                throw new RuntimeException("존재하지 않는 필드입니다: " + field);
+            }
+        }
+        
+        log.info("👤 역할: {}, 요청자: {}, 작성자: {}", role, requesterId, piece.getUserId());
+        log.info("📥 요청된 필드 목록: {}", requestedFields);
+
+        if (isAdmin && !isOwner) {
+            for (String field : requestedFields) {
+                if (!field.equals("tags")) {
+                    throw new RuntimeException("관리자는 tags만 수정할 수 있습니다.");
+                }
+                log.info("🔒 관리자 허용 필드 검사 통과됨");
             }
         }
 
         Map<String, PieceUpdateResponse.UpdateField> updatedFields = new LinkedHashMap<>();
 
-        // 본인: 타입 변경 + 파일 변경 + 텍스트 변경 허용
         if (isOwner) {
             try {
-                // 타입 변경
                 if (request.getType() != null && !request.getType().equals(piece.getType())) {
                     updatedFields.put("type", new PieceUpdateResponse.UpdateField(piece.getType(), request.getType()));
 
-                    // 기존 미디어 삭제
                     if (piece.getMediaId() != null && piece.getPublicId() != null) {
                         String type = piece.getType();
                         String resourceType = ("VIDEO".equals(type) || "AUDIO".equals(type)) ? "video" : "image";
@@ -288,7 +302,6 @@ public class PieceService {
                     piece.setType(request.getType());
                 }
 
-                // 파일 교체
                 if (file != null && !"TEXT".equals(piece.getType())) {
                     if (piece.getMediaId() != null && piece.getPublicId() != null) {
                         String type = piece.getType();
@@ -306,20 +319,17 @@ public class PieceService {
                 throw new RuntimeException("파일 업로드 실패", e);
             }
 
-            // 텍스트 수정
             if (request.getText() != null && "TEXT".equals(piece.getType()) && !request.getText().equals(piece.getText())) {
                 updatedFields.put("text", new PieceUpdateResponse.UpdateField(piece.getText(), request.getText()));
                 piece.setText(request.getText());
             }
         }
 
-        // 본인 & 관리자 공통 허용: 태그 수정
         if (request.getTags() != null && !request.getTags().equals(piece.getTags())) {
             updatedFields.put("tags", new PieceUpdateResponse.UpdateField(piece.getTags(), request.getTags()));
             piece.setTags(request.getTags());
         }
 
-        // 본인만 허용: 위치, 공개 여부
         if (isOwner) {
             if (request.getLocation() != null && !request.getLocation().equals(piece.getLocation())) {
                 updatedFields.put("location", new PieceUpdateResponse.UpdateField(piece.getLocation(), request.getLocation()));
@@ -331,8 +341,11 @@ public class PieceService {
                 piece.setPrivatePiece(request.getPrivatePiece());
             }
         }
+        
+        log.info("🧩 수정 대상 필드 목록: {}", updatedFields.keySet());
 
         if (updatedFields.isEmpty()) {
+        	log.warn("⚠️ 수정된 내용 없음 → 예외 발생");
             throw new RuntimeException("수정된 내용이 없습니다.");
         }
 
@@ -345,23 +358,61 @@ public class PieceService {
             .build();
     }
     
-    // 조각 삭제
+    /**
+     * 조각 삭제 서비스 로직입니다.
+     * 해당 조각을 논리적으로 삭제하며, 소유자 본인 또는 관리자가 삭제할 수 있습니다.
+     *
+     * - 본인은 자신의 조각만 삭제 가능하며, 삭제 사유는 "본인 삭제"로 자동 기록됩니다.
+     * - 관리자는 모든 조각을 삭제할 수 있으며, 삭제 사유(reason)는 반드시 입력되어야 하며 MongoDB에 로그로 저장됩니다.
+     * - 공개 조각이란 사용자가 제3자에게 조각을 공유하거나 협업 일기에 사용하기 위해 타인에게 공개하는 조각입니다.
+     *
+     * @param pieceId 삭제할 조각 ID (MongoDB _id)
+     * @param requesterId 요청자 ID (JWT에서 추출된 사용자 ID)
+     * @param role 요청자 권한 (예: ROLE_USER, ROLE_ADMIN)
+     * @param reason 삭제 사유 (본인 삭제는 자동, 관리자는 필수 입력)
+     * @return 삭제된 조각 ID 및 소유자 ID
+     */
     @Transactional
-    public PieceDeleteResponse deletePiece(String pieceId) {
+    public PieceDeleteResponse deletePiece(String pieceId, String requesterId, String role, String reason) {
         Piece piece = pieceRepository.findById(pieceId)
             .orElseThrow(() -> new RuntimeException("존재하지 않는 조각입니다."));
 
         if (piece.isDeleted()) {
-            throw new RuntimeException("존재하지 않는 조각입니다.");
+            throw new RuntimeException("이미 삭제된 조각입니다.");
+        }
+
+        boolean isOwner = piece.getUserId().equals(requesterId);
+        boolean isAdmin = "ROLE_ADMIN".equals(role);
+
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("조각 삭제 권한이 없습니다.");
+        }
+
+        if (isAdmin && (reason == null || reason.isBlank())) {
+            throw new IllegalArgumentException("관리자는 삭제 사유를 입력해야 합니다.");
+        }
+
+        if (isOwner) {
+            reason = "본인 삭제";
         }
 
         piece.setDeleted(true);
         pieceRepository.save(piece);
 
-        return PieceDeleteResponse.builder()
-                .id(piece.getId())
-                .userId(piece.getUserId())
-                .build();
+        pieceDeleteHistoryRepository.save(PieceDeleteHistory.builder()
+            .pieceId(piece.getId())
+            .ownerId(piece.getUserId())
+            .deletedBy(requesterId)
+            .reason(reason)
+            .timestamp(Instant.now())
+            .build());
+
+        log.info("🗑️ 조각 삭제 기록 저장 완료. pieceId={}, reason={}, deletedBy={}",
+            piece.getId(), reason, requesterId);
+
+        return PieceDeleteResponse.from(piece.getId(), piece.getUserId());
     }
+
+
 
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.puzzlelog.api.dto.request.piece.PieceDeleteRequest;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
 import com.puzzlelog.api.dto.request.piece.PieceSearchRequest;
 import com.puzzlelog.api.dto.request.piece.PieceUpdateRequest;
@@ -181,11 +183,34 @@ public class PieceController {
         return ResponseEntity.ok(ApiResponse.success(response, "조각 수정 성공"));
     }
 
+    /**
+     * 조각 삭제 API입니다.
+     * 해당 조각을 논리적으로 삭제하며,
+     * - 본인은 본인의 조각만 삭제할 수 있으며, reason은 자동 \"본인 삭제\"로 기록됩니다.
+     * - 관리자는 삭제 사유(reason)를 반드시 입력해야 하며, 모든 조각 삭제가 가능합니다.
+     *
+     * @param pieceId 삭제할 조각의 MongoDB ID
+     * @param request 삭제 요청 (관리자만 사용, 일반 사용자는 생략)
+     * @return 삭제된 조각 정보
+     */
+    @DeleteMapping("/{pieceId}")
+    public ResponseEntity<ApiResponse<PieceDeleteResponse>> deletePiece(
+        @PathVariable String pieceId,
+        @RequestBody(required = false) PieceDeleteRequest request
+    ) {
+        String requesterId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String role = SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+            .stream()
+            .findFirst()
+            .map(authority -> authority.getAuthority())
+            .orElse("ROLE_USER");
 
-	// 조각 삭제 (비활성화 처리)
-	@DeleteMapping("/{pieceId}")
-	public ResponseEntity<ApiResponse<PieceDeleteResponse>> deletePiece(@PathVariable String pieceId) {
-	    PieceDeleteResponse response = pieceService.deletePiece(pieceId);
-	    return ResponseEntity.ok(ApiResponse.success(response, "조각 삭제 성공"));
-	}
+        String reason = "ROLE_ADMIN".equals(role)
+            ? (request != null ? request.getReason() : null)
+            : "본인 삭제";
+
+        PieceDeleteResponse response = pieceService.deletePiece(pieceId, requesterId, role, reason);
+        return ResponseEntity.ok(ApiResponse.success(response, "조각 삭제 성공"));
+    }
+
 }

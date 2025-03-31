@@ -52,6 +52,9 @@ dependencies {
 	
 	// Dotenv 라이브러리
     implementation 'io.github.cdimascio:dotenv-java:2.2.4'
+    
+    // Jackson TimeDate (ISO-8601) - JSON을 직렬화/역직렬화 (Java 객체 → JSON 문자열 / JSON 문자열 → Java 객체)
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 	
 	// JWT (Json Web Token)
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -31,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final AccessDeniedHandler accessDeniedHandler;
 
     /**
      * 비밀번호 인코더 (BCrypt 사용)
@@ -84,7 +85,7 @@ public class SecurityConfig {
             
             // 예외 에러 설정
             .exceptionHandling(exception ->
-		            exception.accessDeniedHandler(customAccessDeniedHandler)
+		            exception.accessDeniedHandler(accessDeniedHandler)
 		    )
 
             // X-Frame-Options 헤더를 SAMEORIGIN으로 설정 (iframe 내에서 접근 가능)
