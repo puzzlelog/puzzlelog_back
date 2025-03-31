@@ -27,7 +27,11 @@ public class PostController {
     // 게시글 업로드 API
     @PostMapping
     public ResponseEntity<ApiResponse<Post>> createPost(@RequestBody Post postDocument) {
-        Post newPost = postService.createPost(postDocument.getUserId(), postDocument.getContent(), postDocument.getTitle());
+        Post newPost = postService.createPost(
+        	postDocument.getUserId(),
+        	postDocument.getDiaryId(),
+        	postDocument.getTitle()
+        );
         ApiResponse<Post> response = ApiResponse.success(newPost, "게시글이 성공적으로 생성되었습니다.");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
