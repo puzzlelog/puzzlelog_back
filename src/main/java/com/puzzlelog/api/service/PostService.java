@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.puzzlelog.api.dao.document.Post;
+import com.puzzlelog.api.repository.mongo.DiaryRepository;
 import com.puzzlelog.api.repository.mongo.PostRepository;
 
 @Service
@@ -16,17 +17,21 @@ public class PostService {
 
 	@Autowired
 	private PostRepository postRepository;
+	
+	@Autowired
+	private DiaryRepository diaryRepository;
 
 	public PostService(PostRepository postRepository) {
 		this.postRepository = postRepository;
 	}
 
 	// 게시글 작성 기능
-	public Post createPost(String userId, String content, String title) {
+	public Post createPost(String userId, String diaryId, String title) {
 	    Post post = Post.builder()
 	        .userId(userId)
+	        .diaryId(diaryId)
 	        .title(title)
-	        .content(content)
+	        .content("")
 	        .createdAt(LocalDateTime.now())
 	        .likesCount(0)
 	        .liked(false)

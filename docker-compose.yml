@@ -10,4 +10,4 @@ services:
     volumes:
       - ./.env:/puzzlelog_back/.env  # ✅ 수정된 위치
     ports:
-      - "80:8080"
+      - "8080:8080"

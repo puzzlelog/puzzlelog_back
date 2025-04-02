@@ -22,6 +22,7 @@ public class Post {
     @Id
     private String id;
     private String userId;
+    private String diaryId;
     private String title;
     private String content;
     

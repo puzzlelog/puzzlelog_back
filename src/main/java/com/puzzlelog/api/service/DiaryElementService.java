@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -68,9 +69,10 @@ public class DiaryElementService {
 	        .contentId(request.getContentId())
 	        .drawingData(request.getDrawingData())
 	        .date(request.getDate())
-	        .position(request.getPosition())
-	        .scale(request.getScale())
-	        .rotation(request.getRotation())
+	        .position(Optional.ofNullable(request.getPosition()).orElse(List.of(0.0, 0.0)))
+	        .size(Optional.ofNullable(request.getSize()).orElse(List.of(120.0, 80.0)))
+	        .scale(Optional.ofNullable(request.getScale()).orElse(1.0))
+	        .rotation(Optional.ofNullable(request.getRotation()).orElse(0.0))
 	        .createdAt(Instant.now())
 	        .updatedAt(Instant.now())
 	        .deleted(false)
@@ -151,7 +153,7 @@ public class DiaryElementService {
 	        }
 	    }
 
-	    Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
+	    Pageable pageable = PageRequest.of(request.getPage(), request.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
 	    Page<DiaryElement> elementPage;
 
 	    if (request.getElementType() != null && !request.getElementType().isBlank()) {
@@ -185,7 +187,7 @@ public class DiaryElementService {
 	        elementPage.getContent(),
 	        contentMap,
 	        request.getPage(),
-	        request.getSize(),
+	        request.getPageSize(),
 	        elementPage.getTotalElements()
 	    );
 	}
@@ -257,6 +259,12 @@ public class DiaryElementService {
 	        updatedFields.put("position", new DiaryElementUpdateResponse.UpdateField(element.getPosition(), request.getPosition()));
 	        element.setPosition(request.getPosition());
 	    }
+	    
+	    if (request.getSize() != null 
+	    	    && !request.getSize().equals(element.getSize())) {
+	    	    updatedFields.put("size", new DiaryElementUpdateResponse.UpdateField(element.getSize(), request.getSize()));
+	    	    element.setSize(request.getSize());
+	    	}
 
 	    if (request.getScale() != null 
 	        && !request.getScale().equals(element.getScale())) {
