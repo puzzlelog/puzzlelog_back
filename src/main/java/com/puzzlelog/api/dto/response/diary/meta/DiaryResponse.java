@@ -22,6 +22,7 @@ public class DiaryResponse {
     private List<String> elementIds;
     private Instant createdAt;
     private Instant openAt; // 타임캡슐 오픈 날짜 (일반 일기인 경우 null)
+    private List<String> participants; // 참가자
 
     public static DiaryResponse from(Diary diary) {
         return DiaryResponse.builder()
@@ -30,6 +31,7 @@ public class DiaryResponse {
                 .elementIds(diary.getElementIds())
                 .createdAt(diary.getCreatedAt())
                 .openAt(diary.getOpenAt())
+                .participants(diary.getParticipants())
                 .build();
     }
 }

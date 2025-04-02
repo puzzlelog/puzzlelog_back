@@ -61,6 +61,8 @@ public class DiaryElement {
 
     /** 요소의 확대/축소 비율 (기본값: 1.0, 1보다 크면 확대, 작으면 축소) */
     @Builder.Default
+    private List<Double> size = List.of(120.0, 80.0);
+    @Builder.Default
     private Double scale = 1.0;
 
     /** 요소의 회전 각도 (기본값: 0.0, 단위: 도(degree)) */

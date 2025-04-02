@@ -1,12 +1,17 @@
 package com.puzzlelog.api.dao.document;
 
-import lombok.*;
+import java.time.Instant;
+import java.util.Map;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.Instant;
-import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * 조각 변경 이력 도큐먼트
@@ -19,7 +24,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PieceHistory {
+public class PieceDeleteHistory {
 
     /** 조각 ID */
     private String pieceId;
@@ -30,8 +35,10 @@ public class PieceHistory {
     /** 작업 수행자 ID (본인 또는 관리자) */
     private String performedBy;
 
-    /** 작업 유형 (MODIFY, DELETE, RESTORE, VIEW) */
-    private String action;
+//    /** 작업 유형 (MODIFY, DELETE, RESTORE, VIEW) */
+//    private String action;
+    
+    private String deletedBy;
 
     /** 작업 사유 (삭제/복원 사유, 수정 설명 등) */
     private String reason;

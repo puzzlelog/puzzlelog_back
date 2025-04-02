@@ -31,6 +31,9 @@ public class Post {
     /** 게시글 작성자(일기 공유자)의 사용자 ID */
     private String userId;
 
+    /** 공유된 일기의 MongoDB ID */
+    private String diaryId;
+
     /** 게시글의 제목 (공유된 일기 제목과 동일) */
     private String title;
 

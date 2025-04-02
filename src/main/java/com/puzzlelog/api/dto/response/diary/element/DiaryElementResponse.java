@@ -26,6 +26,7 @@ public class DiaryElementResponse {
     private String drawingData;
     private String date;
     private List<Double> position;
+    private List<Double> size;
     private Double scale;
     private Double rotation;
     private Instant createdAt;
@@ -42,6 +43,7 @@ public class DiaryElementResponse {
             .drawingData(element.getDrawingData())
             .date(element.getDate())
             .position(element.getPosition())
+            .size(element.getSize())
             .scale(element.getScale())
             .rotation(element.getRotation())
             .createdAt(element.getCreatedAt())

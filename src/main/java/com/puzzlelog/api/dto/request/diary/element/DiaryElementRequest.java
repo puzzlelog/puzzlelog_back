@@ -22,6 +22,9 @@ public class DiaryElementRequest {
 
     @Builder.Default
     private List<Double> position = List.of(0.0, 0.0);
+    
+    @Builder.Default
+    private List<Double> size = List.of(120.0, 80.0);
 
     @Builder.Default
     private Double scale = 1.0;

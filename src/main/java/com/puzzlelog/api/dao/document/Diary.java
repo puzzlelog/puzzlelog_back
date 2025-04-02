@@ -65,4 +65,8 @@ public class Diary {
      * (null일 경우 타임캡슐 기능 미사용)
      */
     private Instant openAt;
+    
+    
+    //협업일기 참여자ㅏ
+    private List<String> participants;
 }

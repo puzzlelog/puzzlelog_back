@@ -1,5 +1,6 @@
 package com.puzzlelog.api.repository.mysql;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -61,4 +62,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
      * @return 중복 여부
      */
     boolean existsByNickname(String nickname);
+    
+    List<User> findByUserIdIn(List<String> userIds);
 }

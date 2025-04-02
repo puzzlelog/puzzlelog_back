@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.dao.document.Piece;
+import com.puzzlelog.api.dao.document.PieceDeleteHistory;
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.piece.PieceRequest;
 import com.puzzlelog.api.dto.request.piece.PieceSearchRequest;
@@ -32,6 +33,7 @@ import com.puzzlelog.api.dto.response.piece.PieceDeleteResponse;
 import com.puzzlelog.api.dto.response.piece.PieceResponse;
 import com.puzzlelog.api.dto.response.piece.PieceUpdateResponse;
 import com.puzzlelog.api.repository.listsearch.PieceListSearch;
+import com.puzzlelog.api.repository.mongo.PieceHistoryRepository;
 import com.puzzlelog.api.repository.mongo.PieceRepository;
 import com.puzzlelog.api.repository.mysql.UserRepository;
 
@@ -50,6 +52,9 @@ public class PieceService {
     private final MongoTemplate mongoTemplate;
     private final CloudinaryService cloudinaryService;
     private final PieceListSearch pieceListSearch;
+    
+    // 임시 조각 삭제
+    private final PieceHistoryRepository pieceDeleteHistoryRepository;
     
     // 허용된 타입 상수 정의
     private static final Set<String> ALLOWED_TYPES = Set.of("TEXT", "IMAGE", "VIDEO", "AUDIO");
