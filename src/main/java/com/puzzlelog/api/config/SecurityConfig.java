@@ -73,12 +73,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",
-            "http://puzzlelog.me",
-            "https://puzzlelog.me",
-            "null"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+        	    "http://localhost:*", // 개발용
+        	    "https://puzzlelog.me", // 배포용
+        	    "http://puzzlelog.me",
+        	    "null" // 로컬 파일 테스트
+        	));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
