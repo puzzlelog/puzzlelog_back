@@ -68,6 +68,7 @@ dependencies {
 	// cloudinary의 api
     implementation 'com.cloudinary:cloudinary-http5:2.0.0'
     implementation 'com.cloudinary:cloudinary-taglib:2.0.0'
+    implementation 'io.github.cdimascio:dotenv-java:2.2.4'
     
     // 로컬 환경변수 로드
     implementation 'io.github.cdimascio:dotenv-java:2.2.4'
@@ -79,22 +80,6 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // PDFBox 추가 (버전 2.0.27)
     implementation 'org.apache.pdfbox:pdfbox:2.0.27'
-    
-    // JSON 파싱 및 직렬화/역직렬화
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    
-    // Spring Data REST
-    implementation 'org.springframework.boot:spring-boot-starter-data-rest'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-json'
-    
-    // REST API
-    implementation 'org.springframework:spring-web'
-    implementation 'org.springframework:spring-webmvc'
-    implementation 'org.springframework.boot:spring-boot-starter-tomcat'
-    
-    // 카카오 API 호출을 위한 HTTP 클라이언트
-    implementation 'org.apache.httpcomponents:httpclient'
 }
 
 tasks.named('test') {

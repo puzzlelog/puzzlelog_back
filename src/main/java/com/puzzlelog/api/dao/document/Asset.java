@@ -19,7 +19,6 @@ public class Asset {
     private String mediaId;     // Cloudinary에서 제공한 미디어 URL
     private String publicId;    // Cloudinary의 publicId
     private List<String> tags;  // 태그 정보 (배열 형태)
-    private Boolean locked;
     
     @Builder.Default
     private boolean deleted = false;
