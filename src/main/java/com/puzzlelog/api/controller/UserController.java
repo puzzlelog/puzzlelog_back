@@ -1,7 +1,5 @@
 package com.puzzlelog.api.controller;
 
-import java.util.Map;
-
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,7 +10,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.puzzlelog.api.config.JwtProvider;
-import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dto.request.auth.LoginRequest;
 import com.puzzlelog.api.dto.request.auth.SignupRequest;
 import com.puzzlelog.api.dto.request.user.UserSearchRequest;
@@ -176,43 +172,5 @@ public class UserController {
             default:
                 return "값";
         }
-    }
-    
-    @GetMapping("/{userId}/subscription-status")
-    public ResponseEntity<ApiResponse<String>> getSubscriptionStatus(@PathVariable String userId) {
-    	try {
-    		User user = userService.getUserById(userId);
-    		if (user == null) {
-    			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-    					.body(ApiResponse.fail("사용자를 찾을 수 없습니다."));
-    		}
-    		return ResponseEntity.ok(ApiResponse.success(user.getSubscriptionStatus().name(), "구독 상태 조회 성공"));
-    	} catch (Exception e) {
-    		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    				.body(ApiResponse.fail("구독 상태 조회 중 오류가 발생했습니다."));
-    	}
-    }
-    
-    // 구독 상태 업데이트
-    @PatchMapping("/subscription-status")
-    public ResponseEntity<ApiResponse<Map<String, String>>> updateSubscriptionStatus(
-    		@RequestParam String userId,
-    		@RequestBody Map<String, String> request) {
-    	
-    	String status = request.get("subscriptionStatus");
-    	if (status == null || (!status.equals("ACTIVE") && !status.equals("INACTIVE"))) {
-    		return ResponseEntity.badRequest().body(ApiResponse.fail("올바른 구독 상태를 입력하세요 (ACTIVE/INACTIVE)"));
-    	}
-    	
-    	boolean updated = userService.updateSubscriptionStatus(userId, status);
-    	if (updated) {
-    		Map<String, String> responseData = Map.of(
-    				"userId", userId,
-    				"subscriptionStatus", status
-    		);
-    		return ResponseEntity.ok(ApiResponse.success(responseData, "구독 상태가 변경되었습니다."));
-    	} else {
-    		return ResponseEntity.status(404).body(ApiResponse.fail("사용자를 찾을 수 없습니다."));
-    	}
     }
 }

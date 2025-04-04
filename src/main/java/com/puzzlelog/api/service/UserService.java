@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.puzzlelog.api.dao.document.UserHistory;
 import com.puzzlelog.api.dao.entity.User;
 import com.puzzlelog.api.dao.entity.User.Gender;
-import com.puzzlelog.api.dao.entity.User.Role;
 import com.puzzlelog.api.dao.entity.User.Status;
-import com.puzzlelog.api.dao.entity.User.SubscriptionStatus;
+import com.puzzlelog.api.dao.entity.User.Role;
 import com.puzzlelog.api.dto.request.user.UserSearchRequest;
 import com.puzzlelog.api.dto.request.user.UserUpdateRequest;
 import com.puzzlelog.api.dto.response.piece.CloudinaryUploadResponse;
@@ -280,37 +278,5 @@ public class UserService {
             default:
                 throw new IllegalArgumentException("잘못된 중복 체크 타입입니다: " + type);
         }
-    }
-    
-    @Transactional
-    public void updateSubscriptionStatus(String userId, boolean isSubscribed) {
-    	User user = userRepository.findByUserId(userId)
-    			.orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-    	user.setSubscriptionStatus(isSubscribed ? SubscriptionStatus.ACTIVE : SubscriptionStatus.INACTIVE);
-    	userRepository.save(user);
-    }
-    
-    public boolean isUserSubscribed(String userId) {
-        return userRepository.findByUserId(userId)
-                .map(user -> "ACTIVE".equals(user.getSubscriptionStatus()))
-                .orElse(false);
-    }
-    
-    @Transactional(readOnly = true)
-    public User getUserById(String userId) {
-        return userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-    }
-    
-    @Transactional
-    public boolean updateSubscriptionStatus(String userId, String status) {
-    	Optional<User> userOptional = userRepository.findByUserId(userId);
-    	if (userOptional.isPresent()) {
-    		User user = userOptional.get();
-    		user.setSubscriptionStatus(User.SubscriptionStatus.valueOf(status));
-    		userRepository.save(user);
-    		return true;
-    	}
-    	return false;
     }
 }

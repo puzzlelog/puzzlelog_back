@@ -17,7 +17,6 @@ public class AssetResponse {
     private String mediaId;
     private String publicId;
     private List<String> tags;
-    private Boolean locked;
 
     public static AssetResponse from(Asset asset) {
         if (asset == null) {
@@ -31,7 +30,6 @@ public class AssetResponse {
             .mediaId(asset.getMediaId())
             .publicId(asset.getPublicId())
             .tags(asset.getTags())
-            .locked(asset.getLocked())
             .build();
     }
 }
