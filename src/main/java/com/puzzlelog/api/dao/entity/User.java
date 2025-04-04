@@ -85,6 +85,10 @@ public class User implements Serializable {
     @Column(name = "status", length = 20)
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
+    
+    @Column(name = "subscription_status", length = 20)
+    @Enumerated(EnumType.STRING)
+    private SubscriptionStatus subscriptionStatus = SubscriptionStatus.INACTIVE;
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
@@ -119,5 +123,9 @@ public class User implements Serializable {
 
     public enum Role {
         USER, ADMIN
+    }
+    
+    public enum SubscriptionStatus {
+    	ACTIVE, INACTIVE
     }
 }
