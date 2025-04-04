@@ -36,8 +36,22 @@ public class KakaoPayController {
 	        @RequestParam("pg_token") String pgToken,
 	        @RequestParam("partnerOrderId") String partnerOrderId,
 	        @RequestParam("partnerUserId") String partnerUserId) {
+
+	    // 결제 승인 로직 호출
 	    ApiResponse<String> response = kakaoPayService.approvePayment(pgToken, partnerOrderId, partnerUserId);
-	    return ResponseEntity.ok(response);
+
+	    // ✅ 처리 결과에 따라 프론트엔드로 리다이렉트
+	    if (response.isSuccess()) {
+	        // 결제 승인 성공
+	        return ResponseEntity.status(302)
+	                .header("Location", "http://localhost:3000/subscribe/result?status=success")
+	                .body(response);
+	    } else {
+	        // 결제 승인 실패
+	        return ResponseEntity.status(302)
+	                .header("Location", "http://localhost:3000/subscribe/result?status=fail")
+	                .body(response);
+	    }
 	}
 	
 	// 정기 결제 실행 요청

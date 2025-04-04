@@ -101,24 +101,36 @@ public class KakaoPayService {
 	        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 	        ResponseEntity<Map> response = restTemplate.postForEntity(APPROVE_URL, request, Map.class);
 
-	        // 결제 승인 후 정기 결제 키(SID) 확인
-	        String sid = (String) response.getBody().get("sid");
-	        if (sid == null) {
-	            return ApiResponse.fail("정기 결제 키(SID)가 응답에 없습니다.");
+	        // 결제 승인 응답 확인
+	        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+	        	Map<String, Object> responseBody = response.getBody();
+	        	
+	        	// 정기 결제 키(SID) 확인
+	        	String sid = (String) responseBody.get("sid");
+	        	if (sid == null) {
+	        		return ApiResponse.fail("정기 결제 키(SID)가 응답에 없습니다.");
+	        	}
+	        	
+	        	// 정기 결제 키를 DB에 저장
+	        	subscription.setBillingKey(sid);
+	        	subscription.setUpdatedAt(LocalDateTime.now());
+	        	subscriptionRepository.save(subscription);
+	        	
+	        	// 구독 상태를 'ACTIVE'로 업데이트
+	        	userService.updateSubscriptionStatus(partnerUserId, "ACTIVE");
+	        	
+	        	// 유료 스티커 잠금 해제
+	        	assetService.unlockAllPaidStickers();
+	        	
+	        	return ApiResponse.successMessage("결제 승인 및 구독 활성화 성공");
+	        } else {
+	        	// 승인 실패 시 로그 및 상태 처리
+	        	String errorMessage = "카카오페이 승인 실패 : " + response.getBody();
+	        	return ApiResponse.fail(errorMessage);
 	        }
 
-	        // 정기 결제 키를 DB에 저장
-	        subscription.setBillingKey(sid);
-	        subscriptionRepository.save(subscription);
-	        
-	        // 유료 스티커 잠금 해제
-	        assetService.unlockAllPaidStickers();
-	        userService.updateSubscriptionStatus(partnerUserId, true);
-
-	        return ApiResponse.successMessage("결제 승인 및 구독 활성화 성공");
-
 	    } catch (Exception e) {
-	        return ApiResponse.fail("카카오페이 결제 승인 실패: " + e.getMessage());
+	        return ApiResponse.fail("카카오페이 결제 승인 중 오류 : " + e.getMessage());
 	    }
 	}
 
@@ -194,11 +206,11 @@ public class KakaoPayService {
         params.add("tax_free_amount", "0");
         
         // 승인 URL에 파트너 정보 포함하여 전달
-        String baseUrl = "http://localhost:8080/subscription";
-        params.add("approval_url", baseUrl + "/approve?partnerOrderId=" + requestDTO.getPartnerOrderId() 
-                                    + "&partnerUserId=" + requestDTO.getPartnerUserId());
-        params.add("cancel_url", baseUrl + "/cancel");
-        params.add("fail_url", baseUrl + "/fail");
+        String backendUrl = "http://localhost:8080/subscription/approve";
+        params.add("approval_url", backendUrl + "?partnerOrderId=" + requestDTO.getPartnerOrderId()
+                                      + "&partnerUserId=" + requestDTO.getPartnerUserId());
+        params.add("cancel_url", "http://localhost:3000/payment/result?status=cancel");
+        params.add("fail_url", "http://localhost:3000/payment/result?status=fail");
 
         return params;
     }
